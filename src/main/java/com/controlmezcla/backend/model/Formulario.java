@@ -23,10 +23,14 @@ public class Formulario {
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
+    private String materiales_utilizados;
+    private String clases_mantenimiento;
+    private String tipo_mantenimiento;
+
     private String firma_cliente;
     private String firma_tecnico;
 
     @ManyToOne
-    @JoinColumn(name = "tecnico_id")
+    @JoinColumn(name = "fk_tecnico_id")
     private Usuario tecnico_id;
 }

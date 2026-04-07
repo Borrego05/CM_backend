@@ -19,7 +19,7 @@ public class Imagenes {
     private LocalDate created_at;
 
     @ManyToOne
-    @JoinColumn(name = "formulario_id")
+    @JoinColumn(name = "fk_formulario_id")
     private Formulario formulario_id;
 
 
