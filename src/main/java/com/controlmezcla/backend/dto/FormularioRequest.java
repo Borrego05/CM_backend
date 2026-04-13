@@ -1,5 +1,8 @@
 package com.controlmezcla.backend.dto;
 
+import lombok.Data;
+
+@Data
 public class FormularioRequest {
 
     private String cliente;

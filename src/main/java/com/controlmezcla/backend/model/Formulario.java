@@ -32,5 +32,5 @@ public class Formulario {
 
     @ManyToOne
     @JoinColumn(name = "fk_tecnico_id")
-    private Usuario tecnico_id;
+    private Usuario tecnico;
 }
