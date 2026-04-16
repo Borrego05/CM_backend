@@ -5,8 +5,10 @@ import com.controlmezcla.backend.model.Formulario;
 import com.controlmezcla.backend.service.FormularioService;
 import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,19 +19,30 @@ public class FormularioController {
     @Autowired
     private FormularioService formulario_service;
 
-    @PostMapping("/crear")
-    public ResponseEntity<Formulario> crearFormulario(@RequestBody FormularioRequest request)
+    @PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> crearFormulario(
+            @RequestPart("data") FormularioRequest request,
+            @RequestPart("imagenes") List<MultipartFile> imagenes,
+            @RequestPart("firmaCliente") MultipartFile firmaCliente,
+            @RequestPart("firmaTecnico") MultipartFile firmaTecnico
+            )
     {
-        try
-        {
-            Formulario formulario = formulario_service.crearFormulario(request);
-            return ResponseEntity.ok(formulario);
-        }
-        catch (RuntimeException e)
-        {
-            return ResponseEntity.badRequest().build();
-        }
+        formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
+
+        return ResponseEntity.ok("Formulario creado correctamente");
     }
+//    public ResponseEntity<Formulario> crearFormulario(@RequestBody FormularioRequest request)
+//    {
+//        try
+//        {
+//            Formulario formulario = formulario_service.crearFormulario(request);
+//            return ResponseEntity.ok(formulario);
+//        }
+//        catch (RuntimeException e)
+//        {
+//            return ResponseEntity.badRequest().build();
+//        }
+//    }
 
     @GetMapping("/listar")
     public ResponseEntity<List<Formulario>> listarFormularios()
