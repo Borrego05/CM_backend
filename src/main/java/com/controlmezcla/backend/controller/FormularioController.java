@@ -3,6 +3,7 @@ package com.controlmezcla.backend.controller;
 import com.controlmezcla.backend.dto.FormularioRequest;
 import com.controlmezcla.backend.model.Formulario;
 import com.controlmezcla.backend.service.FormularioService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -19,30 +20,53 @@ public class FormularioController {
     @Autowired
     private FormularioService formulario_service;
 
-    @PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+
+    @PostMapping(value = "/test4")
+    public ResponseEntity<String> test4(
+            @RequestPart("data") String data,
+            @RequestPart("firmaCliente") MultipartFile firmaCliente,
+            @RequestPart("firmaTecnico") MultipartFile firmaTecnico,
+            @RequestPart("imagenes") List<MultipartFile> imagenes)
+    {
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            FormularioRequest request = mapper.readValue(data, FormularioRequest.class);
+
+            System.out.println("===== FOMULARIO CONTROLLER =====");
+            System.out.println("Cliente: " + request.getCliente());
+
+            formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
+            return ResponseEntity.ok("Formulario creado correctamente");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/crear")
     public ResponseEntity<String> crearFormulario(
-            @RequestPart("data") FormularioRequest request,
+            @RequestPart("data") String data,
             @RequestPart("imagenes") List<MultipartFile> imagenes,
             @RequestPart("firmaCliente") MultipartFile firmaCliente,
             @RequestPart("firmaTecnico") MultipartFile firmaTecnico
             )
     {
-        formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            FormularioRequest request = mapper.readValue(data, FormularioRequest.class);
 
-        return ResponseEntity.ok("Formulario creado correctamente");
+            System.out.println("===== FOMULARIO CONTROLLER =====");
+            System.out.println("Cliente: " + request.getCliente());
+
+            formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
+            return ResponseEntity.ok("Formulario creado correctamente");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
-//    public ResponseEntity<Formulario> crearFormulario(@RequestBody FormularioRequest request)
-//    {
-//        try
-//        {
-//            Formulario formulario = formulario_service.crearFormulario(request);
-//            return ResponseEntity.ok(formulario);
-//        }
-//        catch (RuntimeException e)
-//        {
-//            return ResponseEntity.badRequest().build();
-//        }
-//    }
 
     @GetMapping("/listar")
     public ResponseEntity<List<Formulario>> listarFormularios()

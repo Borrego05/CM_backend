@@ -7,7 +7,9 @@ import com.controlmezcla.backend.model.Usuario;
 import com.controlmezcla.backend.repository.FormularioRepository;
 import com.controlmezcla.backend.repository.ImagenesRepository;
 import com.controlmezcla.backend.repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +33,10 @@ public class FormularioService {
     @Autowired
     private PdfService pdf_service;
 
+    @Value("${app.storage.base}")
+    private String storageBase;
+
+    @Transactional
     public Formulario crearFormulario(
             FormularioRequest request,
             List<MultipartFile> imagenes,
@@ -56,7 +62,7 @@ public class FormularioService {
 
         formulario = formulario_repository .save(formulario);
 
-        String carpeta = "data/registros/" + formulario.getId();
+        String carpeta = storageBase + formulario.getId();
         File directorio = new File(carpeta);
         if (!directorio.exists())
         {
@@ -67,7 +73,7 @@ public class FormularioService {
 
         try
         {
-            String nombreFirmaCliente = "firma_clienge.png";
+            String nombreFirmaCliente = "firma_cliente.png";
             String rutaFirmaCliente = carpeta + "/" + nombreFirmaCliente;
             firmaCliente.transferTo(new File(rutaFirmaCliente));
             formulario.setFirma_cliente(nombreFirmaCliente);
@@ -98,11 +104,12 @@ public class FormularioService {
                 i++;
             }
 
-            pdf_service.generarPDF(formulario, rutasImagenes);
+            pdf_service.generarPDF(formulario, rutasImagenes, carpeta);
         }
         catch (Exception e)
         {
-            throw new RuntimeException("Error guardando archivos", e);
+            e.printStackTrace();
+            throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e);
         }
 
         return formulario;

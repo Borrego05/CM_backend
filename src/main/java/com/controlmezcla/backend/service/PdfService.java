@@ -21,12 +21,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Service
 public class PdfService {
 
-    private final FormularioService formularioService;
     @Value("${app.storage.pdf}")
     private String pdfPath;
 
@@ -40,9 +41,7 @@ public class PdfService {
     private static final DeviceRgb AMARILLO = new DeviceRgb(255,193,7);
     private static final DeviceRgb GRIS = new DeviceRgb(80,80,80);
 
-    public PdfService(FormularioService formularioService) {
-        this.formularioService = formularioService;
-    }
+
 
     private Cell crearCelda(String texto, SolidBorder borde, int colspan)
     {
@@ -81,19 +80,19 @@ public class PdfService {
 
         //Titulo
         Cell celdaTitulo = new Cell()
-                .add(new Paragraph("Informe de servicios"))
-                    .setFontSize(18)
-                    .setBold()
-                    .setTextAlignment(TextAlignment.RIGHT)
+                .add(new Paragraph("Informe de servicios")
+                        .setFontSize(18)
+                        .setBold()
+                        .setTextAlignment(TextAlignment.RIGHT))
                 .setBorder(Border.NO_BORDER)
                 .setVerticalAlignment(VerticalAlignment.MIDDLE);
         header.addCell(celdaTitulo);
         document.add(header);
 
         //Linea separadora amarilla
-        document.add(new Paragraph(""))
+        document.add(new Paragraph("")
                 .setBorderBottom(new SolidBorder(AMARILLO, 3))
-                .setBottomMargin(10);
+                .setMarginBottom(10));
     }
 
     private void agregarDatos(Document document, Formulario formulario)
@@ -138,7 +137,7 @@ public class PdfService {
         document.add(tabla);
     }
 
-    private void agregarFirmas(Document document, Formulario formulario)
+    private void agregarFirmas(Document document, Formulario formulario, String carpeta)
     {
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
@@ -158,7 +157,7 @@ public class PdfService {
             try
             {
                 Image firmaCliente = new Image(ImageDataFactory.create(
-                        firmasPath + formulario.getFirma_cliente()+ "/" + formulario.getFirma_cliente()));
+                     carpeta + "/" + formulario.getFirma_cliente()));
                 firmaCliente.setWidth(150).setHeight(60);
                 celdaFirmaCliente.add(firmaCliente);
             }
@@ -182,7 +181,7 @@ public class PdfService {
             try
             {
                 Image firmaTecnico = new Image(ImageDataFactory.create(
-                        firmasPath + formulario.getFirma_tecnico() + "/" + formulario.getFirma_tecnico()
+                        carpeta + "/" + formulario.getFirma_tecnico()
                 ));
                 firmaTecnico.setWidth(150).setHeight(60);
                 celdaFirmaTecnico.add(firmaTecnico);
@@ -197,7 +196,7 @@ public class PdfService {
         document.add(tabla);
     }
 
-    private void agregarImagenes(Document document, Formulario formulario, List<String> imagenes)
+    private void agregarImagenes(Document document, Formulario formulario, List<String> imagenes, String carpeta)
     {
         document.add(new Paragraph("Imagenes del servicio")
                 .setBold()
@@ -212,7 +211,7 @@ public class PdfService {
         {
             try
             {
-                Image imagen = new Image(ImageDataFactory.create(imagenesPath + formulario.getId() + "/" + rutaImagen));
+                Image imagen = new Image(ImageDataFactory.create(carpeta + "/" + rutaImagen));
                 imagen.setWidth(230).setHeight(180);
 
                 Cell celda = new Cell()
@@ -240,13 +239,14 @@ public class PdfService {
         document.add(tabla);
     }
 
-    public String generarPDF(Formulario formulario, List<String> imagenes) throws IOException
+    public String generarPDF(Formulario formulario, List<String> imagenes, String carpeta) throws IOException
     {
         //Nombre del archivo
         String nombreArchivo = "informe_" + formulario.getId() + ".pdf";
         String rutaCompleta = pdfPath + nombreArchivo;
 
         //Crear el documento PDF
+        Files.createDirectories(Paths.get(pdfPath));
         PdfWriter writer = new PdfWriter(rutaCompleta);
         PdfDocument pdfDoc = new PdfDocument(writer);
         Document document = new Document(pdfDoc, PageSize.A4);
@@ -262,12 +262,12 @@ public class PdfService {
         agregarDescripcion(document, formulario);
 
         //4. firmas
-        agregarFirmas(document, formulario);
+        agregarFirmas(document, formulario, carpeta);
 
         //5. imagenes
         if(imagenes != null && !imagenes.isEmpty())
         {
-            agregarImagenes(document, formulario ,imagenes);
+            agregarImagenes(document, formulario ,imagenes, carpeta);
         }
 
         document.close();
