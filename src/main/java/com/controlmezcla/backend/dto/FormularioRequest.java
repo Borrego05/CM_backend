@@ -14,6 +14,8 @@ public class FormularioRequest {
     private String materiales_utilizados;
     private String clases_mantenimiento;
     private String tipo_mantenimiento;
+    private String contacto; //Ultimo campo agregado
     private Long fk_tecnico_id;
+
 
 }
