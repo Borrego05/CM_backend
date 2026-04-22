@@ -58,9 +58,18 @@ public class FormularioService {
         formulario.setMateriales_utilizados(request.getMateriales_utilizados());
         formulario.setClases_mantenimiento(request.getClases_mantenimiento());
         formulario.setTipo_mantenimiento(request.getTipo_mantenimiento());
+        formulario.setContacto(request.getContacto());
         formulario.setTecnico(tecnico);
 
         formulario = formulario_repository .save(formulario);
+
+        //Generacion del codigo con ID
+        formulario_repository.actualizarCodigo(
+                formulario.getId(),
+                "CM-" + String.format("%03d", formulario.getId())
+        );
+
+        formulario.setCodigo_informe("CM-" + String.format("%03d", formulario.getId()));
 
         String carpeta = storageBase + formulario.getId();
         File directorio = new File(carpeta);

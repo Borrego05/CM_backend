@@ -56,43 +56,71 @@ public class PdfService {
         return valor != null ? valor: "";
     }
 
-    private void agregarEncabezado(Document document) throws IOException
+    private void agregarEncabezado(Document document, Formulario formulario) throws IOException
     {
-        Table header = new Table(UnitValue.createPercentArray(new float []{30,70}));
-        header.setWidth(UnitValue.createPercentValue(100));
+        // Fila superior: Logo izquierda | Líneas decorativas derecha
+        Table headerSuperior = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        headerSuperior.setWidth(UnitValue.createPercentValue(100));
 
-        //Logo
-        try
-        {
-            String logoPath = getClass().getClassLoader().getResource("static/logo_control_mezclas.png").getPath();
-            Image logo = new Image(ImageDataFactory.create(logoPath));
-            logo.setWidth(80);
-            Cell celdaLogo = new Cell()
+
+        // Logo izquierda
+        try {
+            var recurso = getClass().getClassLoader().getResource("static/control_mezclas_logo.jpg");
+            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
+            Image logo = new Image(ImageDataFactory.create(ruta));
+            logo.setWidth(100);
+            headerSuperior.addCell(new Cell()
                     .add(logo)
                     .setBorder(Border.NO_BORDER)
-                    .setVerticalAlignment(VerticalAlignment.MIDDLE);
-            header.addCell(celdaLogo);
-        }
-        catch (Exception e)
-        {
-            header.addCell(new Cell().setBorder(Border.NO_BORDER));
+                    .setVerticalAlignment(VerticalAlignment.MIDDLE));
+        } catch (Exception e) {
+            headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
 
-        //Titulo
-        Cell celdaTitulo = new Cell()
-                .add(new Paragraph("Informe de servicios")
-                        .setFontSize(18)
-                        .setBold()
-                        .setTextAlignment(TextAlignment.RIGHT))
-                .setBorder(Border.NO_BORDER)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE);
-        header.addCell(celdaTitulo);
-        document.add(header);
+        // Líneas decorativas derecha
+//        try {
+//            var recurso = getClass().getClassLoader().getResource("static/lineas_decorativas.png");
+//            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
+//            Image lineas = new Image(ImageDataFactory.create(ruta));
+//            lineas.setWidth(160);
+//            lineas.setHorizontalAlignment(HorizontalAlignment.RIGHT);
+//            headerSuperior.addCell(new Cell()
+//                    .add(lineas)
+//                    .setBorder(Border.NO_BORDER)
+//                    .setHorizontalAlignment(HorizontalAlignment.RIGHT)
+//                    .setVerticalAlignment(VerticalAlignment.TOP));
+//        } catch (Exception e) {
+//            headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
+//        }
 
-        //Linea separadora amarilla
-        document.add(new Paragraph("")
-                .setBorderBottom(new SolidBorder(AMARILLO, 3))
-                .setMarginBottom(10));
+        document.add(headerSuperior);
+        //Codigo del informe
+        document.add(new Paragraph(valorVacio(formulario.getCodigo_informe()))
+                .setFontSize(16)
+                .setTextAlignment(TextAlignment.RIGHT)
+                .setMarginTop(5)
+                .setMarginBottom(0)
+                .setBold());
+
+        // Título Informe de Servicios
+        document.add(new Paragraph("Informe de Servicios")
+                .setFontSize(20)
+                .setBold()
+                .setTextAlignment(TextAlignment.RIGHT)
+                .setMarginTop(5)
+                .setMarginBottom(5));
+
+        // Banda gris
+        try {
+            var recurso = getClass().getClassLoader().getResource("static/banda_gris.png");
+            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
+            Image banda = new Image(ImageDataFactory.create(ruta));
+            banda.setWidth(UnitValue.createPercentValue(100));
+            document.add(banda);
+        } catch (Exception e) {
+            System.out.println("Error cargando banda gris: " + e.getMessage());
+        }
+
     }
 
     private void agregarDatos(Document document, Formulario formulario)
@@ -103,18 +131,40 @@ public class PdfService {
 
         SolidBorder borde = new SolidBorder(GRIS, 0.5f);
 
-        //Fila 1 - Cliente (2 columnas)
-        tabla.addCell(crearCelda("Cliente: " + valorVacio(formulario.getCliente()), borde, 2));
-
-        //Fila 2 - Direccion y obra
-        tabla.addCell(crearCelda("Direccion: " + valorVacio(formulario.getDireccion()), borde,1));
-        tabla.addCell(crearCelda("Obra: " + valorVacio(formulario.getObra()), borde, 1));
-
-        //Fila 3 - Telefono y Fecha
-        tabla.addCell(crearCelda("Telefono: " + valorVacio(formulario.getTelefono()), borde, 1));
+        //Fila 1 - Cliente y fecha
+        tabla.addCell(crearCelda("Cliente: " + valorVacio(formulario.getCliente()), borde, 1));
         tabla.addCell(crearCelda("Fecha: " + (formulario.getFecha() != null ? formulario.getFecha().toString(): ""), borde, 1));
 
+
+        //Fila 2 - Contacto y telefono
+        tabla.addCell(crearCelda("Contacto: " + valorVacio(formulario.getContacto()), borde, 1));
+        tabla.addCell(crearCelda("Telefono: " + valorVacio(formulario.getTelefono()), borde, 1));
+
+
+        //Fila 3 - Direccion y Obra juntos
+        String obra_completa = valorVacio(formulario.getDireccion()) + " - " + valorVacio(formulario.getObra());
+        tabla.addCell(crearCelda("Obra: " + obra_completa, borde, 2));
+
         document.add(tabla);
+
+        //Linea divisora
+        document.add(new Paragraph("")
+                .setBorderBottom(new SolidBorder(AMARILLO, 2f))
+                .setMarginTop(20)
+                .setMarginBottom(15));
+
+        //Tabla de tipo y clase de mantenimiento
+        Table tabla_mantenimiento = new Table(UnitValue.createPercentArray(new float[]{100}));
+        tabla_mantenimiento.setWidth(UnitValue.createPercentValue(100));
+
+        //Fila 1 - Tipo de mantenimiento
+        tabla_mantenimiento.addCell(crearCelda("Tipo de mantenimiento: " + valorVacio(formulario.getTipo_mantenimiento()), borde, 1));
+
+        //Fila 2 - Clase de mantenimiento
+        tabla_mantenimiento.addCell(crearCelda("Clase de mantenimiento: " + valorVacio(formulario.getClases_mantenimiento()), borde, 1));
+
+        document.add(tabla_mantenimiento);
+
     }
 
     private void agregarDescripcion(Document document, Formulario formulario)
@@ -135,6 +185,57 @@ public class PdfService {
                 .setPadding(8);
         tabla.addCell(celda);
         document.add(tabla);
+
+        //Materiales utilizados - Solo si hay materiales que agregar
+        if(formulario.getMateriales_utilizados() != null && !formulario.getMateriales_utilizados().isEmpty())
+        {
+            document.add(new Paragraph("Materiales Utilizados")
+                    .setBold()
+                    .setFontSize(11)
+                    .setMarginTop(10)
+            );
+
+            Table tabla_materiales = new Table(UnitValue.createPercentArray(new float[]{20,80}));
+            tabla_materiales.setWidth(UnitValue.createPercentValue(100));
+            SolidBorder borde = new SolidBorder(GRIS, 0.5f);
+
+            //Encabezado de la tabla - CANTIDAD
+            Cell cantidad = new Cell()
+                    .add(new Paragraph("CANTIDAD").setBold().setFontSize(10))
+                    .setBorder(borde)
+                    .setPadding(6)
+                    .setBackgroundColor(new DeviceRgb(220, 220, 220));
+
+            //Encabezado de la tabla - DESCRIPCION
+            Cell descripcion = new Cell()
+                    .add(new Paragraph("DESCRIPCION").setBold().setFontSize(10))
+                    .setBorder(borde)
+                    .setPadding(6)
+                    .setBackgroundColor(new DeviceRgb(220, 220, 220));
+
+            tabla_materiales.addCell(cantidad);
+            tabla_materiales.addCell(descripcion);
+
+            //Filas de materiales
+            String[] materiales = formulario.getMateriales_utilizados().split(",");
+
+            for(String material: materiales)
+            {
+                tabla_materiales.addCell(new Cell()
+                        .add(new Paragraph("1").setFontSize(10))
+                        .setBorder(borde)
+                        .setPadding(6)
+                        .setMinHeight(20));
+
+                tabla_materiales.addCell(new Cell()
+                        .add(new Paragraph(material.trim()).setFontSize(10))
+                        .setBorder(borde)
+                        .setPadding(6)
+                        .setMinHeight(20));
+            }
+
+            document.add(tabla_materiales);
+        }
     }
 
     private void agregarFirmas(Document document, Formulario formulario, String carpeta)
@@ -253,7 +354,7 @@ public class PdfService {
         document.setMargins(20, 30, 20, 30);
 
         // 1. Encabezado
-        agregarEncabezado(document);
+        agregarEncabezado(document, formulario);
 
         //2. Datos Cliente
         agregarDatos(document,formulario);
@@ -261,14 +362,14 @@ public class PdfService {
         //3. Descripcion del trabajo
         agregarDescripcion(document, formulario);
 
-        //4. firmas
-        agregarFirmas(document, formulario, carpeta);
-
-        //5. imagenes
+        //4. imagenes
         if(imagenes != null && !imagenes.isEmpty())
         {
             agregarImagenes(document, formulario ,imagenes, carpeta);
         }
+
+        //5. firmas
+        agregarFirmas(document, formulario, carpeta);
 
         document.close();
         return nombreArchivo;
