@@ -2,7 +2,9 @@ package com.controlmezcla.backend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.cglib.core.Local;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,7 +27,7 @@ public class ActaSilo {
     private String descripcion;
     private String nombre_tecnico;
     private String cedula_tecnico;
-    private String fecha;
+    private LocalDate fecha;
     private String codigo_acta;
 
     @Column(name = "created_at", updatable = false)
