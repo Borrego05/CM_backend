@@ -12,7 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@RestController("/acta-silo")
+@RestController
+@RequestMapping("/acta-silo")
 public class ActaSiloController {
 
     @Autowired
@@ -21,7 +22,7 @@ public class ActaSiloController {
     @PostMapping("/crear")
     public ResponseEntity<String> crearActaSilo(
             @RequestPart("data") String data,
-            @RequestPart(value = "imagenes")List<MultipartFile> imagenes)
+            @RequestPart(value = "imagenes", required = false)List<MultipartFile> imagenes)
     {
         try
         {

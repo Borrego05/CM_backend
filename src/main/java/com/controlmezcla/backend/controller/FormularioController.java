@@ -23,7 +23,7 @@ public class FormularioController {
     @PostMapping(value = "/crear")
     public ResponseEntity<String> crearFormulario(
             @RequestPart("data") String data,
-            @RequestPart("imagenes") List<MultipartFile> imagenes,
+            @RequestPart(value = "imagenes", required = false) List<MultipartFile> imagenes,
             @RequestPart("firmaCliente") MultipartFile firmaCliente,
             @RequestPart("firmaTecnico") MultipartFile firmaTecnico
             )

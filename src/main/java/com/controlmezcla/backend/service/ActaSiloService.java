@@ -61,10 +61,10 @@ public class ActaSiloService {
 
         acta_repository.actualizarCodigo(
                 acta.getId(),
-                "AS-" + String.format("%03d", acta.getId())
+                "CE-" + String.format("%03d", acta.getId())
         );
 
-        acta.setCodigo_acta("AS-" + String.format("%03d", acta.getId()));
+        acta.setCodigo_acta("CE-" + String.format("%03d", acta.getId()));
 
         String carpeta = storage_base + acta.getId();
         File directorio = new File(carpeta);

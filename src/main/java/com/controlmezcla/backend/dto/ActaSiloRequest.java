@@ -17,6 +17,8 @@ public class ActaSiloRequest {
     private String nombre_tecnico;
     private String cedula_tecnico;
     private String fecha;
+    private String tipo_mantenimiento;
+    private String clase_mantenimiento;
     private Long tecnico_id;
 
 }

@@ -77,22 +77,6 @@ public class PdfService {
             headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
 
-        // Líneas decorativas derecha
-//        try {
-//            var recurso = getClass().getClassLoader().getResource("static/lineas_decorativas.png");
-//            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
-//            Image lineas = new Image(ImageDataFactory.create(ruta));
-//            lineas.setWidth(160);
-//            lineas.setHorizontalAlignment(HorizontalAlignment.RIGHT);
-//            headerSuperior.addCell(new Cell()
-//                    .add(lineas)
-//                    .setBorder(Border.NO_BORDER)
-//                    .setHorizontalAlignment(HorizontalAlignment.RIGHT)
-//                    .setVerticalAlignment(VerticalAlignment.TOP));
-//        } catch (Exception e) {
-//            headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
-//        }
-
         document.add(headerSuperior);
         //Codigo del informe
         document.add(new Paragraph(valorVacio(formulario.getCodigo_informe()))

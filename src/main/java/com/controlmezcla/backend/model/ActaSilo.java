@@ -29,6 +29,8 @@ public class ActaSilo {
     private String cedula_tecnico;
     private LocalDate fecha;
     private String codigo_acta;
+    private String tipo_mantenimiento;
+    private String clase_mantenimiento;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime created_at;
