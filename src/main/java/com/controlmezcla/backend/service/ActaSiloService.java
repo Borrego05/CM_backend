@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +38,11 @@ public class ActaSiloService {
     @Value("${app.storage.base}")
     private String storage_base;
 
+    @Value("${app.storage.pdf}")
+    private String pdf_path;
+
     @Transactional
-    public ActaSilo crearActaSilo(ActaSiloRequest request, List<MultipartFile> imagenes)
+    public byte[] crearActaSilo(ActaSiloRequest request, List<MultipartFile> imagenes)
     {
         Usuario tecnico = usuario_repository.findById(request.getTecnico_id())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -96,15 +101,14 @@ public class ActaSiloService {
                 }
             }
 
-            pdf_service.GenerarPdf(acta, rutas_imagenes, carpeta);
+            String nombre_pdf = pdf_service.GenerarPdf(acta, rutas_imagenes, carpeta);
+            return Files.readAllBytes(Paths.get(pdf_path +  nombre_pdf));
 
         } catch (Exception e)
         {
             e.printStackTrace();
             throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e);
         }
-
-        return acta;
     }
 
     public List<ActaSilo> listarActas()

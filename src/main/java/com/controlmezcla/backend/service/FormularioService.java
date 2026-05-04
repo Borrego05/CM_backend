@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +39,11 @@ public class FormularioService {
     @Value("${app.storage.base}")
     private String storageBase;
 
+    @Value("${app.storage.pdf}")
+    private String pdfPath;
+
     @Transactional
-    public Formulario crearFormulario(
+    public byte[] crearFormulario(
             FormularioRequest request,
             List<MultipartFile> imagenes,
             MultipartFile firmaCliente,
@@ -112,16 +118,16 @@ public class FormularioService {
                 rutasImagenes.add(nombreImagen);
                 i++;
             }
+            String nombre_pdf = pdf_service.generarPDF(formulario, rutasImagenes, carpeta);
+            return Files.readAllBytes(Paths.get(pdfPath + nombre_pdf));
 
-            pdf_service.generarPDF(formulario, rutasImagenes, carpeta);
+            //pdf_service.generarPDF(formulario, rutasImagenes, carpeta);
         }
         catch (Exception e)
         {
             e.printStackTrace();
             throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e);
         }
-
-        return formulario;
     }
 
 //    public Formulario crearFormulario(FormularioRequest request)

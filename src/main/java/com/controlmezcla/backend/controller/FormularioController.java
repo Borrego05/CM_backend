@@ -21,7 +21,7 @@ public class FormularioController {
     private FormularioService formulario_service;
 
     @PostMapping(value = "/crear")
-    public ResponseEntity<String> crearFormulario(
+    public ResponseEntity<byte []> crearFormulario(
             @RequestPart("data") String data,
             @RequestPart(value = "imagenes", required = false) List<MultipartFile> imagenes,
             @RequestPart("firmaCliente") MultipartFile firmaCliente,
@@ -33,14 +33,19 @@ public class FormularioController {
             ObjectMapper mapper = new ObjectMapper();
             FormularioRequest request = mapper.readValue(data, FormularioRequest.class);
 
+            byte[] pdf = formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
+
             System.out.println("===== FOMULARIO CONTROLLER =====");
             System.out.println("Cliente: " + request.getCliente());
 
-            formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
-            return ResponseEntity.ok("Formulario creado correctamente");
+            //formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=informe.pdf")
+                    .body(pdf);
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
     }
 

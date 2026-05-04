@@ -20,7 +20,7 @@ public class ActaSiloController {
     private ActaSiloService acta_service;
 
     @PostMapping("/crear")
-    public ResponseEntity<String> crearActaSilo(
+    public ResponseEntity<byte[]> crearActaSilo(
             @RequestPart("data") String data,
             @RequestPart(value = "imagenes", required = false)List<MultipartFile> imagenes)
     {
@@ -29,15 +29,18 @@ public class ActaSiloController {
             ObjectMapper mapper = new ObjectMapper();
             ActaSiloRequest request = mapper.readValue(data, ActaSiloRequest.class);
 
+            byte[] pdf = acta_service.crearActaSilo(request, imagenes);
+
             System.out.println("==== ACTA SILO CONTROLLER ======");
             System.out.println("CLIENTE: " + request.getCliente());
-
-            acta_service.crearActaSilo(request, imagenes);
-            return ResponseEntity.ok("Acta de silo creada correctamente");
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "attachment; filename=acta_silo.pdf")
+                    .body(pdf);
 
         } catch (Exception e) {
             System.out.println("Error en el controlador: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error en el controlador: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
     }
 
