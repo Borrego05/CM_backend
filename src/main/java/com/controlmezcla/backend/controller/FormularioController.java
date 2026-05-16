@@ -24,8 +24,7 @@ public class FormularioController {
     public ResponseEntity<byte []> crearFormulario(
             @RequestPart("data") String data,
             @RequestPart(value = "imagenes", required = false) List<MultipartFile> imagenes,
-            @RequestPart("firmaCliente") MultipartFile firmaCliente,
-            @RequestPart("firmaTecnico") MultipartFile firmaTecnico
+            @RequestPart("firmaCliente") MultipartFile firmaCliente
             )
     {
         try
@@ -33,7 +32,7 @@ public class FormularioController {
             ObjectMapper mapper = new ObjectMapper();
             FormularioRequest request = mapper.readValue(data, FormularioRequest.class);
 
-            byte[] pdf = formulario_service.crearFormulario(request, imagenes, firmaCliente, firmaTecnico);
+            byte[] pdf = formulario_service.crearFormulario(request, imagenes, firmaCliente);
 
             System.out.println("===== FOMULARIO CONTROLLER =====");
             System.out.println("Cliente: " + request.getCliente());

@@ -136,7 +136,7 @@ public class ActaSiloPdfService {
 
         //Titulo centrado
         documento.add(new Paragraph("ACTA MANTENIMIENTO DE SILO")
-                .setFontSize(15)
+                .setFontSize(18)
                 .setBold()
                 .setTextAlignment(TextAlignment.CENTER)
                 .setMarginTop(15)
@@ -257,7 +257,7 @@ public class ActaSiloPdfService {
         documento.add(tabla_imagenes);
     }
 
-    private void AgregarFirmas(Document documento, ActaSilo actaSilo)
+    private void AgregarFirmas(Document documento, ActaSilo actaSilo, String carpeta)
     {
         Table tabla_firmas = new Table(UnitValue.createPercentArray(new float[]{50,50}));
         tabla_firmas.setWidth(UnitValue.createPercentValue(100));
@@ -273,17 +273,11 @@ public class ActaSiloPdfService {
                 .setFontSize(11)
         );
 
-        celda_entrega.add(new Paragraph("____________________________")
-                .setMarginTop(30)
-                .setFontSize(10)
-        );
-
         celda_entrega.add(new Paragraph("Nombre: " + valorVacio(actaSilo.getNombre_tecnico()))
                 .setFontSize(10));
 
-        celda_entrega.add(new Paragraph("Cedula: " + valorVacio(actaSilo.getCedula_tecnico()))
-                .setFontSize(10)
-        );
+        celda_entrega.add(new Paragraph("Celular: " + valorVacio(actaSilo.getTelefono_tecnico()))
+                .setFontSize(10));
 
         tabla_firmas.addCell(celda_entrega);
 
@@ -297,21 +291,33 @@ public class ActaSiloPdfService {
                 .setFontSize(11)
         );
 
-        celda_recibe.add(new Paragraph("____________________________")
-                .setMarginTop(30)
-                .setFontSize(10)
-        );
+        celda_recibe.add(new Paragraph("Nombre: " + valorVacio(actaSilo.getNombre_recibe()))
+                .setFontSize(10));
 
-        celda_recibe.add(new Paragraph("Nombre: ").setFontSize(10));
+        celda_recibe.add(new Paragraph("Cédula: " + valorVacio(actaSilo.getCedula_recibe()))
+                .setFontSize(10));
 
-        celda_recibe.add(new Paragraph("Cedula: ").setFontSize(10));
+        if (actaSilo.getFirma_cliente() != null)
+        {
+            try
+            {
+                Image firmaImg = new Image(ImageDataFactory.create(
+                        carpeta + "/" + actaSilo.getFirma_cliente()));
+                firmaImg.setWidth(150).setHeight(60);
+                celda_recibe.add(firmaImg);
+            }
+            catch (Exception e)
+            {
+                celda_recibe.add(new Paragraph(""));
+            }
+        }
 
         tabla_firmas.addCell(celda_recibe);
 
         documento.add(tabla_firmas);
     }
 
-    public String GenerarPdf(ActaSilo acta, List<String> imagenes, String carpeta) throws  IOException
+    public String GenerarPdf(ActaSilo acta, List<String> imagenes, String carpeta) throws IOException
     {
         String nombre_archivo = "informe_silo_" + acta.getId() + ".pdf";
         String ruta_completa = pdf_path + nombre_archivo;
@@ -335,7 +341,7 @@ public class ActaSiloPdfService {
         }
 
         //Firmas
-        AgregarFirmas(documento, acta);
+        AgregarFirmas(documento, acta, carpeta);
 
         documento.close();
 

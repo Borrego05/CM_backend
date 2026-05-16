@@ -10,6 +10,7 @@ import com.controlmezcla.backend.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -46,8 +47,7 @@ public class FormularioService {
     public byte[] crearFormulario(
             FormularioRequest request,
             List<MultipartFile> imagenes,
-            MultipartFile firmaCliente,
-            MultipartFile firmaTecnico
+            MultipartFile firmaCliente
     )
     {
         Usuario tecnico = usuario_repository.findById(request.getFk_tecnico_id())
@@ -59,12 +59,16 @@ public class FormularioService {
         formulario.setDireccion(request.getDireccion());
         formulario.setObra(request.getObra());
         formulario.setTelefono(request.getTelefono());
-        formulario.setFecha(LocalDate.parse(request.getFecha()));
+        formulario.setFecha(LocalDate.now());
         formulario.setDescripcion(request.getDescripcion());
         formulario.setMateriales_utilizados(request.getMateriales_utilizados());
         formulario.setClases_mantenimiento(request.getClases_mantenimiento());
         formulario.setTipo_mantenimiento(request.getTipo_mantenimiento());
         formulario.setContacto(request.getContacto());
+        formulario.setNombre_tecnico(request.getNombre_tecnico());
+        formulario.setTelefono_tecnico(request.getTelefono_tecnico());
+        formulario.setNombre_recibe(request.getNombre_recibe());
+        formulario.setCedula_recibe(request.getCedula_recibe());
         formulario.setTecnico(tecnico);
 
         formulario = formulario_repository .save(formulario);
@@ -92,11 +96,6 @@ public class FormularioService {
             String rutaFirmaCliente = carpeta + "/" + nombreFirmaCliente;
             firmaCliente.transferTo(new File(rutaFirmaCliente));
             formulario.setFirma_cliente(nombreFirmaCliente);
-
-            String nombreFirmaTecnico = "firma_tecnico.png";
-            String rutaFirmaTecnico = carpeta + "/" + nombreFirmaTecnico;
-            firmaTecnico.transferTo(new File(rutaFirmaTecnico));
-            formulario.setFirma_tecnico(nombreFirmaTecnico);
 
             formulario_repository.save(formulario);
 
@@ -129,28 +128,6 @@ public class FormularioService {
             throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e);
         }
     }
-
-//    public Formulario crearFormulario(FormularioRequest request)
-//    {
-//        Usuario tecnico = usuario_repository.findById(request.getFk_tecnico_id())
-//                .orElseThrow(()-> new RuntimeException("Tecnico no encontrado"));
-//
-//        Formulario formulario = new Formulario();
-//
-//        formulario.setCliente(request.getCliente());
-//        formulario.setDireccion(request.getDireccion());
-//        formulario.setObra(request.getObra());
-//        formulario.setTelefono(request.getTelefono());
-//        formulario.setFecha(LocalDate.parse(request.getFecha()));
-//        formulario.setDescripcion(request.getDescripcion());
-//        formulario.setMateriales_utilizados(request.getMateriales_utilizados());
-//        formulario.setClases_mantenimiento(request.getClases_mantenimiento());
-//        formulario.setTipo_mantenimiento(request.getTipo_mantenimiento());
-//        formulario.setTecnico(tecnico);
-//
-//        return formulario_repository.save(formulario);
-//    }
-
     public List<Formulario> listarFormularios()
     {
         return formulario_repository.findAll();

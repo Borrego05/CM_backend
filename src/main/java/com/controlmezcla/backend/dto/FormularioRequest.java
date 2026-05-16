@@ -9,13 +9,16 @@ public class FormularioRequest {
     private String direccion;
     private String obra;
     private String telefono;
-    private String fecha;
     private String descripcion;
     private String materiales_utilizados;
     private String clases_mantenimiento;
     private String tipo_mantenimiento;
     private String contacto; //Ultimo campo agregado
     private Long fk_tecnico_id;
+    private String nombre_tecnico;
+    private String telefono_tecnico;
+    private String nombre_recibe;
+    private String cedula_recibe;
 
 
 }

@@ -31,6 +31,10 @@ public class Formulario {
     private String firma_tecnico;
     private String contacto; //Ultimo campo agregado
     private String codigo_informe; //Campo agregado para manejar los codigos del informe
+    private String nombre_tecnico;
+    private String telefono_tecnico;
+    private String nombre_recibe;
+    private String cedula_recibe;
 
     @ManyToOne
     @JoinColumn(name = "fk_tecnico_id")

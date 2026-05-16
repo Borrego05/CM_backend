@@ -42,7 +42,7 @@ public class ActaSiloService {
     private String pdf_path;
 
     @Transactional
-    public byte[] crearActaSilo(ActaSiloRequest request, List<MultipartFile> imagenes)
+    public byte[] crearActaSilo(ActaSiloRequest request, List<MultipartFile> imagenes, MultipartFile firmaCliente)
     {
         Usuario tecnico = usuario_repository.findById(request.getTecnico_id())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -60,7 +60,12 @@ public class ActaSiloService {
         acta.setDescripcion(request.getDescripcion());
         acta.setNombre_tecnico(request.getNombre_tecnico());
         acta.setCedula_tecnico(request.getCedula_tecnico());
-        acta.setFecha(LocalDate.parse(request.getFecha()));
+        acta.setTipo_mantenimiento(request.getTipo_mantenimiento());
+        acta.setClase_mantenimiento(request.getClase_mantenimiento());
+        acta.setTelefono_tecnico(request.getTelefono_tecnico());
+        acta.setNombre_recibe(request.getNombre_recibe());
+        acta.setCedula_recibe(request.getCedula_recibe());
+        acta.setFecha(LocalDate.now());
 
         acta = acta_repository.save(acta);
 
@@ -83,6 +88,11 @@ public class ActaSiloService {
 
         try
         {
+            String nombreFirma = "firma_cliente.png";
+            firmaCliente.transferTo(new File(carpeta + "/" + nombreFirma));
+            acta.setFirma_cliente(nombreFirma);
+            acta_repository.save(acta);
+
             if(imagenes != null && !imagenes.isEmpty())
             {
                 int i = 1;

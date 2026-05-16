@@ -22,14 +22,15 @@ public class ActaSiloController {
     @PostMapping("/crear")
     public ResponseEntity<byte[]> crearActaSilo(
             @RequestPart("data") String data,
-            @RequestPart(value = "imagenes", required = false)List<MultipartFile> imagenes)
+            @RequestPart(value = "imagenes", required = false) List<MultipartFile> imagenes,
+            @RequestPart("firmaCliente") MultipartFile firmaCliente)
     {
         try
         {
             ObjectMapper mapper = new ObjectMapper();
             ActaSiloRequest request = mapper.readValue(data, ActaSiloRequest.class);
 
-            byte[] pdf = acta_service.crearActaSilo(request, imagenes);
+            byte[] pdf = acta_service.crearActaSilo(request, imagenes, firmaCliente);
 
             System.out.println("==== ACTA SILO CONTROLLER ======");
             System.out.println("CLIENTE: " + request.getCliente());
