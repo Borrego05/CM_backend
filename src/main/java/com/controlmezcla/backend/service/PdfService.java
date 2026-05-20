@@ -77,22 +77,6 @@ public class PdfService {
             headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
 
-        // Líneas decorativas derecha
-//        try {
-//            var recurso = getClass().getClassLoader().getResource("static/lineas_decorativas.png");
-//            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
-//            Image lineas = new Image(ImageDataFactory.create(ruta));
-//            lineas.setWidth(160);
-//            lineas.setHorizontalAlignment(HorizontalAlignment.RIGHT);
-//            headerSuperior.addCell(new Cell()
-//                    .add(lineas)
-//                    .setBorder(Border.NO_BORDER)
-//                    .setHorizontalAlignment(HorizontalAlignment.RIGHT)
-//                    .setVerticalAlignment(VerticalAlignment.TOP));
-//        } catch (Exception e) {
-//            headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
-//        }
-
         document.add(headerSuperior);
         //Codigo del informe
         document.add(new Paragraph(valorVacio(formulario.getCodigo_informe()))
@@ -242,58 +226,45 @@ public class PdfService {
     {
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
-        tabla.setMarginTop(10);
+        tabla.setMarginTop(30);
 
         SolidBorder borde = new SolidBorder(GRIS, 0.5f);
 
-        //Firma cliente
-        Cell celdaFirmaCliente = new Cell()
+        // Celda ENTREGA
+        Cell celdaEntrega = new Cell()
                 .setBorder(borde)
-                .setPadding(8)
-                .setMinHeight(80);
-        celdaFirmaCliente.add(new Paragraph("Firma del cliente: ").setBold());
+                .setPadding(8);
+        celdaEntrega.add(new Paragraph("ENTREGA").setBold());
+        celdaEntrega.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_tecnico())).setFontSize(10));
+        celdaEntrega.add(new Paragraph("Celular: " + valorVacio(formulario.getTelefono_tecnico())).setFontSize(10));
+
+        tabla.addCell(celdaEntrega);
+
+        // Celda RECIBE
+        Cell celdaRecibe = new Cell()
+                .setBorder(borde)
+                .setPadding(8);
+        celdaRecibe.add(new Paragraph("RECIBE").setBold());
+        celdaRecibe.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_recibe())).setFontSize(10));
+        celdaRecibe.add(new Paragraph("Cédula: " + valorVacio(formulario.getCedula_recibe())).setFontSize(10));
 
         if (formulario.getFirma_cliente() != null)
         {
             try
             {
                 Image firmaCliente = new Image(ImageDataFactory.create(
-                     carpeta + "/" + formulario.getFirma_cliente()));
-                firmaCliente.setWidth(150).setHeight(60);
-                celdaFirmaCliente.add(firmaCliente);
-            }
-            catch (Exception e)
-            {
-                celdaFirmaCliente.add(new Paragraph(""));
-            }
-        }
-
-        tabla.addCell(celdaFirmaCliente);
-
-        //Firma tecnico
-        Cell celdaFirmaTecnico = new Cell()
-                .setBorder(borde)
-                .setPadding(8)
-                .setMinHeight(80);
-        celdaFirmaTecnico.add(new Paragraph("Firma del tecnico:").setBold());
-
-        if(formulario.getFirma_tecnico() != null)
-        {
-            try
-            {
-                Image firmaTecnico = new Image(ImageDataFactory.create(
-                        carpeta + "/" + formulario.getFirma_tecnico()
+                        carpeta + "/" + formulario.getFirma_cliente()
                 ));
-                firmaTecnico.setWidth(150).setHeight(60);
-                celdaFirmaTecnico.add(firmaTecnico);
+                firmaCliente.setWidth(150).setHeight(60);
+                celdaRecibe.add(firmaCliente);
             }
             catch (Exception e)
             {
-                celdaFirmaTecnico.add(new Paragraph(""));
+                celdaRecibe.add(new Paragraph(""));
             }
         }
 
-        tabla.addCell(celdaFirmaTecnico);
+        tabla.addCell(celdaRecibe);
         document.add(tabla);
     }
 
