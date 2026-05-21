@@ -37,11 +37,13 @@ public class FormularioService {
     @Autowired
     private PdfService pdf_service;
 
-    @Value("${app.storage.base}")
-    private String storageBase;
-
-    @Value("${app.storage.pdf}")
-    private String pdfPath;
+    // ── ALMACENAMIENTO EN DISCO (desactivado temporalmente para Railway) ──────
+    // Para reactivar: descomentar las líneas marcadas con [STORAGE] en este archivo,
+    // en PdfService.java y en application.properties (app.storage.base / app.storage.pdf)
+    // @Value("${app.storage.base}")
+    // private String storageBase;                                              // [STORAGE]
+    // @Value("${app.storage.pdf}")
+    // private String pdfPath;                                                  // [STORAGE]
 
     @Transactional
     public byte[] crearFormulario(
@@ -71,63 +73,62 @@ public class FormularioService {
         formulario.setCedula_recibe(request.getCedula_recibe());
         formulario.setTecnico(tecnico);
 
-        formulario = formulario_repository .save(formulario);
+        formulario = formulario_repository.save(formulario);
 
-        //Generacion del codigo con ID
+        // Generación del código con ID
         formulario_repository.actualizarCodigo(
                 formulario.getId(),
                 "CM-" + String.format("%03d", formulario.getId())
         );
-
         formulario.setCodigo_informe("CM-" + String.format("%03d", formulario.getId()));
 
-        String carpeta = storageBase + formulario.getId();
-        File directorio = new File(carpeta);
-        if (!directorio.exists())
-        {
-            directorio.mkdirs();
-        }
+        // ── BLOQUE DE ALMACENAMIENTO EN DISCO (desactivado para Railway) ──────
+        // Para reactivar: descomentar este bloque completo y comentar la sección
+        // "GENERACIÓN SIN ARCHIVOS" de abajo.
+        //
+        // String carpeta = storageBase + formulario.getId();                   // [STORAGE]
+        // File directorio = new File(carpeta);                                 // [STORAGE]
+        // if (!directorio.exists()) { directorio.mkdirs(); }                  // [STORAGE]
+        //
+        // List<String> rutasImagenes = new ArrayList<>();                      // [STORAGE]
+        // try {                                                                 // [STORAGE]
+        //     String nombreFirmaCliente = "firma_cliente.png";                 // [STORAGE]
+        //     String rutaFirmaCliente = carpeta + "/" + nombreFirmaCliente;    // [STORAGE]
+        //     firmaCliente.transferTo(new File(rutaFirmaCliente));             // [STORAGE]
+        //     formulario.setFirma_cliente(nombreFirmaCliente);                 // [STORAGE]
+        //     formulario_repository.save(formulario);                          // [STORAGE]
+        //                                                                       // [STORAGE]
+        //     int i = 1;                                                       // [STORAGE]
+        //     for (MultipartFile img : imagenes) {                             // [STORAGE]
+        //         String nombreImagen = "img_" + i + ".jpg";                  // [STORAGE]
+        //         String rutaImagen = carpeta + "/" + nombreImagen;            // [STORAGE]
+        //         img.transferTo(new File(rutaImagen));                        // [STORAGE]
+        //         Imagenes imagen = new Imagenes();                            // [STORAGE]
+        //         imagen.setRuta_imagen(nombreImagen);                         // [STORAGE]
+        //         imagen.setFormulario_id(formulario);                         // [STORAGE]
+        //         imagen.setCreated_at(LocalDate.now());                       // [STORAGE]
+        //         imagenes_repository.save(imagen);                            // [STORAGE]
+        //         rutasImagenes.add(nombreImagen);                             // [STORAGE]
+        //         i++;                                                         // [STORAGE]
+        //     }                                                                // [STORAGE]
+        //     String nombre_pdf = pdf_service.generarPDF(formulario, rutasImagenes, carpeta); // [STORAGE]
+        //     return Files.readAllBytes(Paths.get(pdfPath + nombre_pdf));      // [STORAGE]
+        // } catch (Exception e) {                                              // [STORAGE]
+        //     e.printStackTrace();                                             // [STORAGE]
+        //     throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e); // [STORAGE]
+        // }                                                                     // [STORAGE]
+        // ── FIN BLOQUE ALMACENAMIENTO ─────────────────────────────────────────
 
-        List<String> rutasImagenes = new ArrayList<>();
-
-        try
-        {
-            String nombreFirmaCliente = "firma_cliente.png";
-            String rutaFirmaCliente = carpeta + "/" + nombreFirmaCliente;
-            firmaCliente.transferTo(new File(rutaFirmaCliente));
-            formulario.setFirma_cliente(nombreFirmaCliente);
-
-            formulario_repository.save(formulario);
-
-            int i = 1;
-            for (MultipartFile img : imagenes)
-            {
-                String nombreImagen = "img_" + i + ".jpg";
-                String rutaImagen = carpeta + "/" + nombreImagen;
-
-                img.transferTo(new File(rutaImagen));
-
-                Imagenes imagen = new Imagenes();
-                imagen.setRuta_imagen(nombreImagen);
-                imagen.setFormulario_id(formulario);
-                imagen.setCreated_at(LocalDate.now());
-
-                imagenes_repository.save(imagen);
-
-                rutasImagenes.add(nombreImagen);
-                i++;
-            }
-            String nombre_pdf = pdf_service.generarPDF(formulario, rutasImagenes, carpeta);
-            return Files.readAllBytes(Paths.get(pdfPath + nombre_pdf));
-
-            //pdf_service.generarPDF(formulario, rutasImagenes, carpeta);
-        }
-        catch (Exception e)
-        {
+        // ── GENERACIÓN SIN ARCHIVOS (activo para Railway) ─────────────────────
+        try {
+            return pdf_service.generarPDF(formulario, new ArrayList<>(), "");
+        } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e);
+            throw new RuntimeException("Error generando PDF: " + e.getMessage(), e);
         }
+        // ── FIN GENERACIÓN SIN ARCHIVOS ───────────────────────────────────────
     }
+
     public List<Formulario> listarFormularios()
     {
         return formulario_repository.findAll();

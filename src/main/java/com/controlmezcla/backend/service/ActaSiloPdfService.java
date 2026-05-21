@@ -19,20 +19,20 @@ import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @Service
 public class ActaSiloPdfService {
 
-    @Value("${app.storage.pdf}")
-    private String pdf_path;
+    // ── ALMACENAMIENTO EN DISCO (desactivado temporalmente para Railway) ──────
+    // Para reactivar: descomentar esta anotación @Value y en application.properties
+    // (app.storage.pdf)
+    // @Value("${app.storage.pdf}")
+    // private String pdf_path;                                                 // [STORAGE]
 
     private static final DeviceRgb AMARILLO = new DeviceRgb(255, 193, 7);
     private static final DeviceRgb GRIS = new DeviceRgb(80, 80, 80);
@@ -317,34 +317,47 @@ public class ActaSiloPdfService {
         documento.add(tabla_firmas);
     }
 
-    public String GenerarPdf(ActaSilo acta, List<String> imagenes, String carpeta) throws IOException
+    // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────────
+    // Devuelve el PDF como byte[] sin escribir ningún archivo en disco.
+    // Para volver al modo disco: cambiar la firma a `public String GenerarPdf(...)`,
+    // reemplazar ByteArrayOutputStream por PdfWriter(ruta_completa), crear directorios
+    // con Files.createDirectories y devolver el nombre del archivo.
+    public byte[] GenerarPdf(ActaSilo acta, List<String> imagenes, String carpeta) throws IOException
     {
-        String nombre_archivo = "informe_silo_" + acta.getId() + ".pdf";
-        String ruta_completa = pdf_path + nombre_archivo;
+        // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
+        // String nombre_archivo = "informe_silo_" + acta.getId() + ".pdf";    // [STORAGE]
+        // String ruta_completa = pdf_path + nombre_archivo;                   // [STORAGE]
+        // Files.createDirectories(Paths.get(pdf_path));                       // [STORAGE]
+        // PdfWriter writer = new PdfWriter(ruta_completa);                    // [STORAGE]
+        // ── FIN MODO DISCO ─────────────────────────────────────────────────────
 
-        Files.createDirectories(Paths.get(pdf_path));
-        PdfWriter writer = new PdfWriter(ruta_completa);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PdfWriter writer = new PdfWriter(baos);
         PdfDocument pdf_doc = new PdfDocument(writer);
         Document documento = new Document(pdf_doc, PageSize.A4);
         documento.setMargins(40, 50, 40, 50);
 
-        //Encabezado
+        // Encabezado
         agregarEncabezado(documento, acta);
 
-        //Parrafo
+        // Párrafo
         agregarParrafos(documento, acta);
 
-        //Imagenes
-        if(imagenes != null && !imagenes.isEmpty())
+        // Imágenes
+        if (imagenes != null && !imagenes.isEmpty())
         {
             AgregarImagenes(documento, imagenes, carpeta);
         }
 
-        //Firmas
+        // Firmas
         AgregarFirmas(documento, acta, carpeta);
 
         documento.close();
 
-        return nombre_archivo;
+        // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
+        // return nombre_archivo;                                               // [STORAGE]
+        // ── FIN MODO DISCO ─────────────────────────────────────────────────────
+        return baos.toByteArray();
     }
+    // ── FIN GENERACIÓN EN MEMORIA ─────────────────────────────────────────────
 }
