@@ -113,14 +113,24 @@ public class ActaSiloService {
         // }                                                                     // [STORAGE]
         // ── FIN BLOQUE ALMACENAMIENTO ─────────────────────────────────────────
 
-        // ── GENERACIÓN SIN ARCHIVOS (activo para Railway) ─────────────────────
+        // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────
+        // Convierte los MultipartFile a byte[] para pasarlos al PDF sin tocar disco.
         try {
-            return pdf_service.GenerarPdf(acta, new ArrayList<>(), "");
+            List<byte[]> imagenes_bytes = new ArrayList<>();
+            if (imagenes != null) {
+                for (MultipartFile img : imagenes) {
+                    imagenes_bytes.add(img.getBytes());
+                }
+            }
+            byte[] firma_bytes = (firmaCliente != null && !firmaCliente.isEmpty())
+                    ? firmaCliente.getBytes()
+                    : null;
+            return pdf_service.GenerarPdf(acta, imagenes_bytes, firma_bytes);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error generando PDF: " + e.getMessage(), e);
         }
-        // ── FIN GENERACIÓN SIN ARCHIVOS ───────────────────────────────────────
+        // ── FIN GENERACIÓN EN MEMORIA ─────────────────────────────────────────
     }
 
     public List<ActaSilo> listarActas()
