@@ -35,11 +35,13 @@ public class ActaSiloService {
     @Autowired
     private ActaSiloPdfService pdf_service;
 
-    @Value("${app.storage.base}")
-    private String storage_base;
-
-    @Value("${app.storage.pdf}")
-    private String pdf_path;
+    // ── ALMACENAMIENTO EN DISCO (desactivado temporalmente para Railway) ──────
+    // Para reactivar: descomentar las líneas marcadas con [STORAGE] en este archivo,
+    // en ActaSiloPdfService.java y en application.properties (app.storage.base / app.storage.pdf)
+    // @Value("${app.storage.base}")
+    // private String storage_base;                                             // [STORAGE]
+    // @Value("${app.storage.pdf}")
+    // private String pdf_path;                                                 // [STORAGE]
 
     @Transactional
     public byte[] crearActaSilo(ActaSiloRequest request, List<MultipartFile> imagenes, MultipartFile firmaCliente)
@@ -73,52 +75,52 @@ public class ActaSiloService {
                 acta.getId(),
                 "CE-" + String.format("%03d", acta.getId())
         );
-
         acta.setCodigo_acta("CE-" + String.format("%03d", acta.getId()));
 
-        String carpeta = storage_base + acta.getId();
-        File directorio = new File(carpeta);
+        // ── BLOQUE DE ALMACENAMIENTO EN DISCO (desactivado para Railway) ──────
+        // Para reactivar: descomentar este bloque completo y comentar la sección
+        // "GENERACIÓN SIN ARCHIVOS" de abajo.
+        //
+        // String carpeta = storage_base + acta.getId();                        // [STORAGE]
+        // File directorio = new File(carpeta);                                 // [STORAGE]
+        // if (!directorio.exists()) { directorio.mkdirs(); }                  // [STORAGE]
+        //
+        // List<String> rutas_imagenes = new ArrayList<>();                     // [STORAGE]
+        // try {                                                                 // [STORAGE]
+        //     String nombreFirma = "firma_cliente.png";                        // [STORAGE]
+        //     firmaCliente.transferTo(new File(carpeta + "/" + nombreFirma));  // [STORAGE]
+        //     acta.setFirma_cliente(nombreFirma);                              // [STORAGE]
+        //     acta_repository.save(acta);                                      // [STORAGE]
+        //                                                                       // [STORAGE]
+        //     if (imagenes != null && !imagenes.isEmpty()) {                   // [STORAGE]
+        //         int i = 1;                                                   // [STORAGE]
+        //         for (MultipartFile imagen : imagenes) {                      // [STORAGE]
+        //             String nombre = "img_" + i + ".jpg";                    // [STORAGE]
+        //             imagen.transferTo(new File(carpeta + "/" + nombre));     // [STORAGE]
+        //             ImagenesActaSilo imagen_silo = new ImagenesActaSilo();   // [STORAGE]
+        //             imagen_silo.setRuta_imagen(nombre);                      // [STORAGE]
+        //             imagen_silo.setActaSilo(acta);                           // [STORAGE]
+        //             imagenes_repository.save(imagen_silo);                   // [STORAGE]
+        //             rutas_imagenes.add(nombre);                              // [STORAGE]
+        //             i++;                                                     // [STORAGE]
+        //         }                                                            // [STORAGE]
+        //     }                                                                // [STORAGE]
+        //     String nombre_pdf = pdf_service.GenerarPdf(acta, rutas_imagenes, carpeta); // [STORAGE]
+        //     return Files.readAllBytes(Paths.get(pdf_path + nombre_pdf));     // [STORAGE]
+        // } catch (Exception e) {                                              // [STORAGE]
+        //     e.printStackTrace();                                             // [STORAGE]
+        //     throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e); // [STORAGE]
+        // }                                                                     // [STORAGE]
+        // ── FIN BLOQUE ALMACENAMIENTO ─────────────────────────────────────────
 
-        if (!directorio.exists())
-        {
-            directorio.mkdirs();
-        }
-
-        List<String> rutas_imagenes = new ArrayList<>();
-
-        try
-        {
-            String nombreFirma = "firma_cliente.png";
-            firmaCliente.transferTo(new File(carpeta + "/" + nombreFirma));
-            acta.setFirma_cliente(nombreFirma);
-            acta_repository.save(acta);
-
-            if(imagenes != null && !imagenes.isEmpty())
-            {
-                int i = 1;
-                for(MultipartFile imagen : imagenes)
-                {
-                    String nombre = "img_" + i + ".jpg";
-                    imagen.transferTo(new File(carpeta + "/" +nombre));
-
-                    ImagenesActaSilo imagen_silo = new ImagenesActaSilo();
-                    imagen_silo.setRuta_imagen(nombre);
-                    imagen_silo.setActaSilo(acta);
-                    imagenes_repository.save(imagen_silo);
-
-                    rutas_imagenes.add(nombre);
-                    i++;
-                }
-            }
-
-            String nombre_pdf = pdf_service.GenerarPdf(acta, rutas_imagenes, carpeta);
-            return Files.readAllBytes(Paths.get(pdf_path +  nombre_pdf));
-
-        } catch (Exception e)
-        {
+        // ── GENERACIÓN SIN ARCHIVOS (activo para Railway) ─────────────────────
+        try {
+            return pdf_service.GenerarPdf(acta, new ArrayList<>(), "");
+        } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Error guardando archivos: " + e.getMessage(), e);
+            throw new RuntimeException("Error generando PDF: " + e.getMessage(), e);
         }
+        // ── FIN GENERACIÓN SIN ARCHIVOS ───────────────────────────────────────
     }
 
     public List<ActaSilo> listarActas()
@@ -136,5 +138,4 @@ public class ActaSiloService {
     {
         return acta_repository.findByTecnicoId(tecnico_id);
     }
-
 }

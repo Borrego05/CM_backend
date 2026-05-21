@@ -17,25 +17,24 @@ import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 
 @Service
 public class PdfService {
 
-    @Value("${app.storage.pdf}")
-    private String pdfPath;
-
-    @Value("${app.storage.imagenes}")
-    private String imagenesPath;
-
-    @Value("${app.storage.firmas}")
-    private String firmasPath;
+    // ── ALMACENAMIENTO EN DISCO (desactivado temporalmente para Railway) ──────
+    // Para reactivar: descomentar estas anotaciones @Value y en application.properties
+    // (app.storage.pdf / app.storage.imagenes / app.storage.firmas)
+    // @Value("${app.storage.pdf}")
+    // private String pdfPath;                                                  // [STORAGE]
+    // @Value("${app.storage.imagenes}")
+    // private String imagenesPath;                                             // [STORAGE]
+    // @Value("${app.storage.firmas}")
+    // private String firmasPath;                                               // [STORAGE]
 
     //Colores del formato
     private static final DeviceRgb AMARILLO = new DeviceRgb(255,193,7);
@@ -311,15 +310,22 @@ public class PdfService {
         document.add(tabla);
     }
 
-    public String generarPDF(Formulario formulario, List<String> imagenes, String carpeta) throws IOException
+    // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────────
+    // Devuelve el PDF como byte[] sin escribir ningún archivo en disco.
+    // Para volver al modo disco: cambiar la firma a `public String generarPDF(...)`,
+    // reemplazar ByteArrayOutputStream por PdfWriter(rutaCompleta), crear directorios
+    // con Files.createDirectories y devolver el nombre del archivo.
+    public byte[] generarPDF(Formulario formulario, List<String> imagenes, String carpeta) throws IOException
     {
-        //Nombre del archivo
-        String nombreArchivo = "informe_" + formulario.getId() + ".pdf";
-        String rutaCompleta = pdfPath + nombreArchivo;
+        // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
+        // String nombreArchivo = "informe_" + formulario.getId() + ".pdf";     // [STORAGE]
+        // String rutaCompleta = pdfPath + nombreArchivo;                       // [STORAGE]
+        // Files.createDirectories(Paths.get(pdfPath));                         // [STORAGE]
+        // PdfWriter writer = new PdfWriter(rutaCompleta);                      // [STORAGE]
+        // ── FIN MODO DISCO ─────────────────────────────────────────────────────
 
-        //Crear el documento PDF
-        Files.createDirectories(Paths.get(pdfPath));
-        PdfWriter writer = new PdfWriter(rutaCompleta);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PdfWriter writer = new PdfWriter(baos);
         PdfDocument pdfDoc = new PdfDocument(writer);
         Document document = new Document(pdfDoc, PageSize.A4);
         document.setMargins(20, 30, 20, 30);
@@ -327,24 +333,29 @@ public class PdfService {
         // 1. Encabezado
         agregarEncabezado(document, formulario);
 
-        //2. Datos Cliente
-        agregarDatos(document,formulario);
+        // 2. Datos Cliente
+        agregarDatos(document, formulario);
 
-        //3. Descripcion del trabajo
+        // 3. Descripcion del trabajo
         agregarDescripcion(document, formulario);
 
-        //4. imagenes
-        if(imagenes != null && !imagenes.isEmpty())
+        // 4. Imagenes
+        if (imagenes != null && !imagenes.isEmpty())
         {
-            agregarImagenes(document, formulario ,imagenes, carpeta);
+            agregarImagenes(document, formulario, imagenes, carpeta);
         }
 
-        //5. firmas
+        // 5. Firmas
         agregarFirmas(document, formulario, carpeta);
 
         document.close();
-        return nombreArchivo;
+
+        // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
+        // return nombreArchivo;                                                // [STORAGE]
+        // ── FIN MODO DISCO ─────────────────────────────────────────────────────
+        return baos.toByteArray();
     }
+    // ── FIN GENERACIÓN EN MEMORIA ─────────────────────────────────────────────
 
 
 }
