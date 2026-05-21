@@ -62,16 +62,18 @@ public class PdfService {
         headerSuperior.setWidth(UnitValue.createPercentValue(100));
 
 
-        // Logo izquierda
-        try {
-            var recurso = getClass().getClassLoader().getResource("static/control_mezclas_logo.jpg");
-            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
-            Image logo = new Image(ImageDataFactory.create(ruta));
-            logo.setWidth(100);
-            headerSuperior.addCell(new Cell()
-                    .add(logo)
-                    .setBorder(Border.NO_BORDER)
-                    .setVerticalAlignment(VerticalAlignment.MIDDLE));
+        // Logo izquierda — cargado desde classpath como stream (compatible con JAR/Railway)
+        try (var stream = getClass().getClassLoader().getResourceAsStream("static/control_mezclas_logo.jpg")) {
+            if (stream != null) {
+                Image logo = new Image(ImageDataFactory.create(stream.readAllBytes()));
+                logo.setWidth(100);
+                headerSuperior.addCell(new Cell()
+                        .add(logo)
+                        .setBorder(Border.NO_BORDER)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE));
+            } else {
+                headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
+            }
         } catch (Exception e) {
             headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
@@ -93,13 +95,13 @@ public class PdfService {
                 .setMarginTop(5)
                 .setMarginBottom(5));
 
-        // Banda gris
-        try {
-            var recurso = getClass().getClassLoader().getResource("static/banda_gris.png");
-            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
-            Image banda = new Image(ImageDataFactory.create(ruta));
-            banda.setWidth(UnitValue.createPercentValue(100));
-            document.add(banda);
+        // Banda gris — cargado desde classpath como stream (compatible con JAR/Railway)
+        try (var stream = getClass().getClassLoader().getResourceAsStream("static/banda_gris.png")) {
+            if (stream != null) {
+                Image banda = new Image(ImageDataFactory.create(stream.readAllBytes()));
+                banda.setWidth(UnitValue.createPercentValue(100));
+                document.add(banda);
+            }
         } catch (Exception e) {
             System.out.println("Error cargando banda gris: " + e.getMessage());
         }
@@ -221,7 +223,7 @@ public class PdfService {
         }
     }
 
-    private void agregarFirmas(Document document, Formulario formulario, String carpeta)
+    private void agregarFirmas(Document document, Formulario formulario, byte[] firmaClienteBytes)
     {
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
@@ -247,13 +249,12 @@ public class PdfService {
         celdaRecibe.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_recibe())).setFontSize(10));
         celdaRecibe.add(new Paragraph("Cédula: " + valorVacio(formulario.getCedula_recibe())).setFontSize(10));
 
-        if (formulario.getFirma_cliente() != null)
+        // Firma del cliente — cargada desde bytes en memoria (sin disco)
+        if (firmaClienteBytes != null && firmaClienteBytes.length > 0)
         {
             try
             {
-                Image firmaCliente = new Image(ImageDataFactory.create(
-                        carpeta + "/" + formulario.getFirma_cliente()
-                ));
+                Image firmaCliente = new Image(ImageDataFactory.create(firmaClienteBytes));
                 firmaCliente.setWidth(150).setHeight(60);
                 celdaRecibe.add(firmaCliente);
             }
@@ -267,7 +268,7 @@ public class PdfService {
         document.add(tabla);
     }
 
-    private void agregarImagenes(Document document, Formulario formulario, List<String> imagenes, String carpeta)
+    private void agregarImagenes(Document document, Formulario formulario, List<byte[]> imagenesBytes)
     {
         document.add(new Paragraph("Imagenes del servicio")
                 .setBold()
@@ -275,14 +276,15 @@ public class PdfService {
                 .setMarginTop(15)
         );
 
-        Table tabla = new Table(UnitValue.createPercentArray(new float []{50, 50}));
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
 
-        for (String rutaImagen : imagenes)
+        // Imágenes cargadas desde bytes en memoria (sin disco)
+        for (byte[] imagenBytes : imagenesBytes)
         {
             try
             {
-                Image imagen = new Image(ImageDataFactory.create(carpeta + "/" + rutaImagen));
+                Image imagen = new Image(ImageDataFactory.create(imagenBytes));
                 imagen.setWidth(230).setHeight(180);
 
                 Cell celda = new Cell()
@@ -295,14 +297,13 @@ public class PdfService {
             catch (Exception e)
             {
                 tabla.addCell(new Cell()
-                        .add( new Paragraph("Imagen no disponible"))
-                        .setBorder(new SolidBorder(GRIS, 0.5f)
-                        )
+                        .add(new Paragraph("Imagen no disponible"))
+                        .setBorder(new SolidBorder(GRIS, 0.5f))
                 );
             }
         }
 
-        if(imagenes.size() % 2 != 0)
+        if (imagenesBytes.size() % 2 != 0)
         {
             tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
@@ -315,7 +316,7 @@ public class PdfService {
     // Para volver al modo disco: cambiar la firma a `public String generarPDF(...)`,
     // reemplazar ByteArrayOutputStream por PdfWriter(rutaCompleta), crear directorios
     // con Files.createDirectories y devolver el nombre del archivo.
-    public byte[] generarPDF(Formulario formulario, List<String> imagenes, String carpeta) throws IOException
+    public byte[] generarPDF(Formulario formulario, List<byte[]> imagenesBytes, byte[] firmaClienteBytes) throws IOException
     {
         // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
         // String nombreArchivo = "informe_" + formulario.getId() + ".pdf";     // [STORAGE]
@@ -339,14 +340,14 @@ public class PdfService {
         // 3. Descripcion del trabajo
         agregarDescripcion(document, formulario);
 
-        // 4. Imagenes
-        if (imagenes != null && !imagenes.isEmpty())
+        // 4. Imagenes desde bytes en memoria
+        if (imagenesBytes != null && !imagenesBytes.isEmpty())
         {
-            agregarImagenes(document, formulario, imagenes, carpeta);
+            agregarImagenes(document, formulario, imagenesBytes);
         }
 
-        // 5. Firmas
-        agregarFirmas(document, formulario, carpeta);
+        // 5. Firmas desde bytes en memoria
+        agregarFirmas(document, formulario, firmaClienteBytes);
 
         document.close();
 

@@ -58,24 +58,24 @@ public class ActaSiloPdfService {
         header_tabla.setWidth(UnitValue.createPercentValue(100));
         header_tabla.setMarginBottom(0);
 
-        //Logo izquierda
-        try
-        {
-            var recurso = getClass().getClassLoader().getResource("static/logo_cemex.png");
-            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
-            Image logo_izquierda = new Image(ImageDataFactory.create(ruta));
-            logo_izquierda.setWidth(130);
-            header_tabla.addCell(new Cell()
-                    .add(logo_izquierda)
-                    .setBorder(Border.NO_BORDER)
-                    .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                    .setPaddingLeft(0)
-                    .setPaddingRight(20)
-            );
-
+        // Logo izquierda — cargado desde classpath como stream (compatible con JAR/Railway)
+        try (var stream = getClass().getClassLoader().getResourceAsStream("static/logo_cemex.png")) {
+            if (stream != null) {
+                Image logo_izquierda = new Image(ImageDataFactory.create(stream.readAllBytes()));
+                logo_izquierda.setWidth(130);
+                header_tabla.addCell(new Cell()
+                        .add(logo_izquierda)
+                        .setBorder(Border.NO_BORDER)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                        .setPaddingLeft(0)
+                        .setPaddingRight(20)
+                );
+            } else {
+                header_tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
+            }
         } catch (Exception e) {
-
             System.out.println("Error cargando el logo Cemex izquierda: " + e.getMessage());
+            header_tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
 
         //Celda logo de la derecha
@@ -86,26 +86,24 @@ public class ActaSiloPdfService {
 //                .setPaddingLeft(220)
 //                .setPaddingRight(0);
 
-        //Logo de la derecha
-        try
-        {
-            var recurso = getClass().getClassLoader().getResource("static/control_mezclas_logo.jpg");
-            String ruta = java.net.URLDecoder.decode(recurso.getPath(), "UTF-8");
-            Image logo_derecha = new Image(ImageDataFactory.create(ruta));
-            logo_derecha.setWidth(120);
-            logo_derecha.setHorizontalAlignment(HorizontalAlignment.RIGHT);
-
-            header_tabla.addCell(new Cell()
-                    .add(logo_derecha)
-                    .setBorder(Border.NO_BORDER)
-                    .setHorizontalAlignment(HorizontalAlignment.RIGHT)
-                    .setVerticalAlignment(VerticalAlignment.MIDDLE)
-            );
-            //celda_derecha.add(logo_derecha);
-
-        } catch (Exception e)
-        {
+        // Logo derecha — cargado desde classpath como stream (compatible con JAR/Railway)
+        try (var stream = getClass().getClassLoader().getResourceAsStream("static/control_mezclas_logo.jpg")) {
+            if (stream != null) {
+                Image logo_derecha = new Image(ImageDataFactory.create(stream.readAllBytes()));
+                logo_derecha.setWidth(120);
+                logo_derecha.setHorizontalAlignment(HorizontalAlignment.RIGHT);
+                header_tabla.addCell(new Cell()
+                        .add(logo_derecha)
+                        .setBorder(Border.NO_BORDER)
+                        .setHorizontalAlignment(HorizontalAlignment.RIGHT)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                );
+            } else {
+                header_tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
+            }
+        } catch (Exception e) {
             System.out.println("Error cargando el logo control mezclas derecha: " + e.getMessage());
+            header_tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
 
         header_tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
@@ -214,22 +212,23 @@ public class ActaSiloPdfService {
         documento.add(tabla_descripcion);
     }
 
-    private void AgregarImagenes(Document documento, List<String> imagenes, String carpeta)
+    private void AgregarImagenes(Document documento, List<byte[]> imagenesBytes)
     {
-        documento.add(new  Paragraph("IMAGENES DEL SERVICIO")
+        documento.add(new Paragraph("IMAGENES DEL SERVICIO")
                 .setBold()
                 .setFontSize(11)
                 .setMarginTop(15)
         );
 
-        Table tabla_imagenes = new Table(UnitValue.createPercentArray(new float[]{50,50}));
+        Table tabla_imagenes = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla_imagenes.setWidth(UnitValue.createPercentValue(100));
 
-        for (String ruta_imagen : imagenes)
+        // Imágenes cargadas desde bytes en memoria (sin disco)
+        for (byte[] imagen_bytes : imagenesBytes)
         {
             try
             {
-                Image imagen = new Image(ImageDataFactory.create(carpeta + "/" + ruta_imagen));
+                Image imagen = new Image(ImageDataFactory.create(imagen_bytes));
                 imagen.setWidth(230);
                 imagen.setHeight(180);
                 imagen.setAutoScale(false);
@@ -249,7 +248,7 @@ public class ActaSiloPdfService {
             }
         }
 
-        if (imagenes.size() % 2 != 0)
+        if (imagenesBytes.size() % 2 != 0)
         {
             tabla_imagenes.addCell(new Cell().setBorder(Border.NO_BORDER));
         }
@@ -257,13 +256,13 @@ public class ActaSiloPdfService {
         documento.add(tabla_imagenes);
     }
 
-    private void AgregarFirmas(Document documento, ActaSilo actaSilo, String carpeta)
+    private void AgregarFirmas(Document documento, ActaSilo actaSilo, byte[] firmaClienteBytes)
     {
-        Table tabla_firmas = new Table(UnitValue.createPercentArray(new float[]{50,50}));
+        Table tabla_firmas = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla_firmas.setWidth(UnitValue.createPercentValue(100));
         tabla_firmas.setMarginTop(30);
 
-        //ENTREGA
+        // ENTREGA
         Cell celda_entrega = new Cell()
                 .setBorder(Border.NO_BORDER)
                 .setPadding(8);
@@ -281,7 +280,7 @@ public class ActaSiloPdfService {
 
         tabla_firmas.addCell(celda_entrega);
 
-        //RECIBE
+        // RECIBE
         Cell celda_recibe = new Cell()
                 .setBorder(Border.NO_BORDER)
                 .setPadding(8);
@@ -297,12 +296,12 @@ public class ActaSiloPdfService {
         celda_recibe.add(new Paragraph("Cédula: " + valorVacio(actaSilo.getCedula_recibe()))
                 .setFontSize(10));
 
-        if (actaSilo.getFirma_cliente() != null)
+        // Firma del cliente — cargada desde bytes en memoria (sin disco)
+        if (firmaClienteBytes != null && firmaClienteBytes.length > 0)
         {
             try
             {
-                Image firmaImg = new Image(ImageDataFactory.create(
-                        carpeta + "/" + actaSilo.getFirma_cliente()));
+                Image firmaImg = new Image(ImageDataFactory.create(firmaClienteBytes));
                 firmaImg.setWidth(150).setHeight(60);
                 celda_recibe.add(firmaImg);
             }
@@ -322,7 +321,7 @@ public class ActaSiloPdfService {
     // Para volver al modo disco: cambiar la firma a `public String GenerarPdf(...)`,
     // reemplazar ByteArrayOutputStream por PdfWriter(ruta_completa), crear directorios
     // con Files.createDirectories y devolver el nombre del archivo.
-    public byte[] GenerarPdf(ActaSilo acta, List<String> imagenes, String carpeta) throws IOException
+    public byte[] GenerarPdf(ActaSilo acta, List<byte[]> imagenesBytes, byte[] firmaClienteBytes) throws IOException
     {
         // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
         // String nombre_archivo = "informe_silo_" + acta.getId() + ".pdf";    // [STORAGE]
@@ -343,14 +342,14 @@ public class ActaSiloPdfService {
         // Párrafo
         agregarParrafos(documento, acta);
 
-        // Imágenes
-        if (imagenes != null && !imagenes.isEmpty())
+        // Imágenes desde bytes en memoria
+        if (imagenesBytes != null && !imagenesBytes.isEmpty())
         {
-            AgregarImagenes(documento, imagenes, carpeta);
+            AgregarImagenes(documento, imagenesBytes);
         }
 
-        // Firmas
-        AgregarFirmas(documento, acta, carpeta);
+        // Firmas desde bytes en memoria
+        AgregarFirmas(documento, acta, firmaClienteBytes);
 
         documento.close();
 
