@@ -246,7 +246,7 @@ public class PdfService {
 
     private void agregarDatos(Document document, Formulario formulario) {
         // ── 1. DATOS DEL CLIENTE ─────────────────────────────────────────────
-        agregarTituloSeccion(document, "1. DATOS DEL CLIENTE", "static/persona.jpg");
+        agregarTituloSeccion(document, "1. DATOS DEL CLIENTE", "static/persona.png");
 
         Table tarjetas = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tarjetas.setWidth(UnitValue.createPercentValue(100));
@@ -278,7 +278,7 @@ public class PdfService {
         document.add(tarjetas);
 
         // ── 2. DETALLES DEL MANTENIMIENTO ────────────────────────────────────
-        agregarTituloSeccion(document, "2. DETALLES DEL MANTENIMIENTO", "static/herramienta.jpg");
+        agregarTituloSeccion(document, "2. DETALLES DEL MANTENIMIENTO", "static/herramienta.png");
 
         Table tablaMantenimiento = new Table(UnitValue.createPercentArray(new float[]{28, 72}));
         tablaMantenimiento.setWidth(UnitValue.createPercentValue(100));
@@ -317,7 +317,7 @@ public class PdfService {
 
     private void agregarDescripcion(Document document, Formulario formulario) {
         // ── 3. DESCRIPCIÓN DEL TRABAJO REALIZADO ─────────────────────────────
-        agregarTituloSeccion(document, "3. DESCRIPCIÓN DEL TRABAJO REALIZADO", "static/doc.jpg");
+        agregarTituloSeccion(document, "3. DESCRIPCIÓN DEL TRABAJO REALIZADO", "static/doc.png");
 
         // Mismo cuadro grande, con el nuevo estilo visual
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{100}));
@@ -333,7 +333,7 @@ public class PdfService {
 
         // ── 4. MATERIALES UTILIZADOS ─────────────────────────────────────────
         if (formulario.getMateriales_utilizados() != null && !formulario.getMateriales_utilizados().isEmpty()) {
-            agregarTituloSeccion(document, "4. MATERIALES UTILIZADOS", "static/caja.jpg");
+            agregarTituloSeccion(document, "4. MATERIALES UTILIZADOS", "static/caja.png");
 
             Table tablaMateriales = new Table(UnitValue.createPercentArray(new float[]{20, 80}));
             tablaMateriales.setWidth(UnitValue.createPercentValue(100));
@@ -431,8 +431,8 @@ public class PdfService {
 
         // Tarjeta FIRMA DEL TÉCNICO
         Cell celdaTecnico = new Cell().setBorder(borde).setPadding(12);
-        //celdaTecnico.add(new Paragraph("FIRMA DEL TÉCNICO")
-        //        .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
+        celdaTecnico.add(new Paragraph("INFORMACIÓN DEL TECNICO")
+                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
         //celdaTecnico.add(new Paragraph("\n_____________________________").setFontSize(10));
         celdaTecnico.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_tecnico()))
                 .setFontSize(9).setMarginTop(6));
