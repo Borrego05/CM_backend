@@ -10,6 +10,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Div;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
@@ -27,302 +28,352 @@ import java.util.List;
 public class PdfService {
 
     // ── ALMACENAMIENTO EN DISCO (desactivado temporalmente para Railway) ──────
-    // Para reactivar: descomentar estas anotaciones @Value y en application.properties
-    // (app.storage.pdf / app.storage.imagenes / app.storage.firmas)
-    // @Value("${app.storage.pdf}")
-    // private String pdfPath;                                                  // [STORAGE]
-    // @Value("${app.storage.imagenes}")
-    // private String imagenesPath;                                             // [STORAGE]
-    // @Value("${app.storage.firmas}")
-    // private String firmasPath;                                               // [STORAGE]
+    // @Value("${app.storage.pdf}")       private String pdfPath;
+    // @Value("${app.storage.imagenes}")  private String imagenesPath;
+    // @Value("${app.storage.firmas}")    private String firmasPath;
 
-    //Colores del formato
-    private static final DeviceRgb AMARILLO = new DeviceRgb(255,193,7);
-    private static final DeviceRgb GRIS = new DeviceRgb(80,80,80);
+    private static final DeviceRgb AMARILLO       = new DeviceRgb(255, 193, 7);
+    private static final DeviceRgb AMARILLO_SUAVE = new DeviceRgb(255, 248, 220);
+    private static final DeviceRgb GRIS_OSCURO    = new DeviceRgb(50, 50, 50);
+    private static final DeviceRgb GRIS_BORDE     = new DeviceRgb(200, 200, 200);
+    private static final DeviceRgb GRIS_LABEL     = new DeviceRgb(120, 120, 120);
+    private static final DeviceRgb BLANCO         = new DeviceRgb(255, 255, 255);
 
-
-
-    private Cell crearCelda(String texto, SolidBorder borde, int colspan)
-    {
-        return new Cell(1, colspan)
-                .add(new Paragraph(texto).setFontSize(10))
-                .setBorder(borde)
-                .setPadding(6);
+    private String valorVacio(String valor) {
+        return valor != null ? valor : "";
     }
 
-    private String valorVacio(String valor)
-    {
-        return valor != null ? valor: "";
+    // Encabezado de sección: [cuadro amarillo] [TÍTULO ─────────────────]
+    private void agregarTituloSeccion(Document document, String titulo) {
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{4, 96}));
+        tabla.setWidth(UnitValue.createPercentValue(100));
+        tabla.setMarginTop(14).setMarginBottom(6);
+
+        tabla.addCell(new Cell()
+                .setBackgroundColor(AMARILLO)
+                .setHeight(26)
+                .setBorder(Border.NO_BORDER)
+                .setPadding(0));
+
+        tabla.addCell(new Cell()
+                .add(new Paragraph(titulo)
+                        .setBold().setFontSize(10).setFontColor(GRIS_OSCURO).setMarginBottom(0))
+                .setBorder(Border.NO_BORDER)
+                .setBorderBottom(new SolidBorder(GRIS_BORDE, 1f))
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setPaddingLeft(10).setPaddingBottom(4));
+
+        document.add(tabla);
     }
 
-    private void agregarEncabezado(Document document, Formulario formulario) throws IOException
-    {
-        // Fila superior: Logo izquierda | Líneas decorativas derecha
-        Table headerSuperior = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
-        headerSuperior.setWidth(UnitValue.createPercentValue(100));
+    // Chip con borde izquierdo amarillo para tipos/clases seleccionados
+    private Div crearChip(String texto) {
+        return new Div()
+                .add(new Paragraph(texto.trim().toUpperCase())
+                        .setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(0))
+                .setBorderLeft(new SolidBorder(AMARILLO, 4f))
+                .setBackgroundColor(AMARILLO_SUAVE)
+                .setPaddingLeft(8).setPaddingRight(8).setPaddingTop(4).setPaddingBottom(4)
+                .setMarginBottom(4);
+    }
 
+    private void agregarEncabezado(Document document, Formulario formulario) throws IOException {
+        // Barra oscura superior
+        Table barraTop = new Table(UnitValue.createPercentArray(new float[]{100}));
+        barraTop.setWidth(UnitValue.createPercentValue(100));
+        barraTop.setMarginBottom(8);
+        barraTop.addCell(new Cell()
+                .add(new Paragraph(""))
+                .setBackgroundColor(GRIS_OSCURO).setHeight(10).setBorder(Border.NO_BORDER));
+        document.add(barraTop);
 
-        // Logo izquierda — cargado desde classpath como stream (compatible con JAR/Railway)
+        // Fila principal: Logo (izquierda) | Código + Fecha (derecha)
+        Table header = new Table(UnitValue.createPercentArray(new float[]{55, 45}));
+        header.setWidth(UnitValue.createPercentValue(100));
+
+        // Logo — sin modificar, se carga igual que antes
+        Cell celdaLogo = new Cell().setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
         try (var stream = getClass().getClassLoader().getResourceAsStream("static/control_mezclas_logo.jpg")) {
             if (stream != null) {
                 Image logo = new Image(ImageDataFactory.create(stream.readAllBytes()));
-                logo.setWidth(100);
-                headerSuperior.addCell(new Cell()
-                        .add(logo)
-                        .setBorder(Border.NO_BORDER)
-                        .setVerticalAlignment(VerticalAlignment.MIDDLE));
+                logo.setWidth(150);
+                celdaLogo.add(logo);
             } else {
-                headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
+                celdaLogo.add(new Paragraph(""));
             }
         } catch (Exception e) {
-            headerSuperior.addCell(new Cell().setBorder(Border.NO_BORDER));
+            celdaLogo.add(new Paragraph(""));
         }
+        header.addCell(celdaLogo);
 
-        document.add(headerSuperior);
-        //Codigo del informe
-        document.add(new Paragraph(valorVacio(formulario.getCodigo_informe()))
-                .setFontSize(16)
-                .setTextAlignment(TextAlignment.RIGHT)
-                .setMarginTop(5)
-                .setMarginBottom(0)
-                .setBold());
+        // Código de servicio y Fecha en cajas con borde amarillo
+        Table tablaCodigoFecha = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        tablaCodigoFecha.setWidth(UnitValue.createPercentValue(100));
 
-        // Título Informe de Servicios
-        document.add(new Paragraph("Informe de Servicios")
-                .setFontSize(20)
-                .setBold()
-                .setTextAlignment(TextAlignment.RIGHT)
-                .setMarginTop(5)
-                .setMarginBottom(5));
+        Cell celdaCodigo = new Cell()
+                .setBorder(new SolidBorder(AMARILLO, 1.5f))
+                .setPadding(8).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaCodigo.add(new Paragraph("CÓDIGO DE SERVICIO")
+                .setFontSize(7).setFontColor(GRIS_LABEL).setTextAlignment(TextAlignment.CENTER).setMarginBottom(2));
+        celdaCodigo.add(new Paragraph(valorVacio(formulario.getCodigo_informe()))
+                .setFontSize(18).setBold().setFontColor(GRIS_OSCURO).setTextAlignment(TextAlignment.CENTER));
+        tablaCodigoFecha.addCell(celdaCodigo);
 
-        // Banda gris — cargado desde classpath como stream (compatible con JAR/Railway)
-        try (var stream = getClass().getClassLoader().getResourceAsStream("static/banda_gris.png")) {
-            if (stream != null) {
-                Image banda = new Image(ImageDataFactory.create(stream.readAllBytes()));
-                banda.setWidth(UnitValue.createPercentValue(100));
-                document.add(banda);
-            }
-        } catch (Exception e) {
-            System.out.println("Error cargando banda gris: " + e.getMessage());
-        }
+        Cell celdaFecha = new Cell()
+                .setBorder(new SolidBorder(AMARILLO, 1.5f))
+                .setPadding(8).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaFecha.add(new Paragraph("FECHA")
+                .setFontSize(7).setFontColor(GRIS_LABEL).setTextAlignment(TextAlignment.CENTER).setMarginBottom(2));
+        celdaFecha.add(new Paragraph(formulario.getFecha() != null ? formulario.getFecha().toString() : "")
+                .setFontSize(11).setBold().setFontColor(GRIS_OSCURO).setTextAlignment(TextAlignment.CENTER));
+        tablaCodigoFecha.addCell(celdaFecha);
 
-    }
+        header.addCell(new Cell()
+                .add(tablaCodigoFecha)
+                .setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE));
+        document.add(header);
 
-    private void agregarDatos(Document document, Formulario formulario)
-    {
-        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
-        tabla.setWidth(UnitValue.createPercentValue(100));
-        tabla.setMarginTop(10);
-
-        SolidBorder borde = new SolidBorder(GRIS, 0.5f);
-
-        //Fila 1 - Cliente y fecha
-        tabla.addCell(crearCelda("Cliente: " + valorVacio(formulario.getCliente()), borde, 1));
-        tabla.addCell(crearCelda("Fecha: " + (formulario.getFecha() != null ? formulario.getFecha().toString(): ""), borde, 1));
-
-
-        //Fila 2 - Contacto y telefono
-        tabla.addCell(crearCelda("Contacto: " + valorVacio(formulario.getContacto()), borde, 1));
-        tabla.addCell(crearCelda("Telefono: " + valorVacio(formulario.getTelefono()), borde, 1));
-
-
-        //Fila 3 - Direccion y Obra juntos
-        String obra_completa = valorVacio(formulario.getDireccion()) + " - " + valorVacio(formulario.getObra());
-        tabla.addCell(crearCelda("Obra: " + obra_completa, borde, 2));
-
-        document.add(tabla);
-
-        //Linea divisora
+        // Línea separadora amarilla
         document.add(new Paragraph("")
-                .setBorderBottom(new SolidBorder(AMARILLO, 2f))
-                .setMarginTop(20)
-                .setMarginBottom(15));
-
-        //Tabla de tipo y clase de mantenimiento
-        Table tabla_mantenimiento = new Table(UnitValue.createPercentArray(new float[]{100}));
-        tabla_mantenimiento.setWidth(UnitValue.createPercentValue(100));
-
-        //Fila 1 - Tipo de mantenimiento
-        tabla_mantenimiento.addCell(crearCelda("Tipo de mantenimiento: " + valorVacio(formulario.getTipo_mantenimiento()), borde, 1));
-
-        //Fila 2 - Clase de mantenimiento
-        tabla_mantenimiento.addCell(crearCelda("Clase de mantenimiento: " + valorVacio(formulario.getClases_mantenimiento()), borde, 1));
-
-        document.add(tabla_mantenimiento);
-
+                .setBorderBottom(new SolidBorder(AMARILLO, 2.5f))
+                .setMarginTop(8).setMarginBottom(2));
     }
 
-    private void agregarDescripcion(Document document, Formulario formulario)
-    {
-        document.add(new Paragraph("Descripcion del trabajo realizado")
-                .setBold()
-                .setFontSize(11)
-                .setMarginTop(10)
-        );
+    private void agregarDatos(Document document, Formulario formulario) {
+        // ── 1. DATOS DEL CLIENTE ─────────────────────────────────────────────
+        agregarTituloSeccion(document, "1. DATOS DEL CLIENTE");
 
+        Table tarjetas = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        tarjetas.setWidth(UnitValue.createPercentValue(100));
+        tarjetas.setMarginBottom(4);
+
+        SolidBorder bordeTarjeta = new SolidBorder(GRIS_BORDE, 0.8f);
+
+        Cell cardCliente = new Cell().setBorder(bordeTarjeta).setPadding(10);
+        cardCliente.add(new Paragraph("CLIENTE").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(2));
+        cardCliente.add(new Paragraph(valorVacio(formulario.getCliente())).setFontSize(10).setBold());
+        tarjetas.addCell(cardCliente);
+
+        Cell cardContacto = new Cell().setBorder(bordeTarjeta).setPadding(10);
+        cardContacto.add(new Paragraph("CONTACTO").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(2));
+        cardContacto.add(new Paragraph(valorVacio(formulario.getContacto())).setFontSize(10).setBold());
+        tarjetas.addCell(cardContacto);
+
+        Cell cardTelefono = new Cell().setBorder(bordeTarjeta).setPadding(10);
+        cardTelefono.add(new Paragraph("TELÉFONO").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(2));
+        cardTelefono.add(new Paragraph(valorVacio(formulario.getTelefono())).setFontSize(10).setBold());
+        tarjetas.addCell(cardTelefono);
+
+        String obraCompleta = valorVacio(formulario.getDireccion()) + " - " + valorVacio(formulario.getObra());
+        Cell cardObra = new Cell().setBorder(bordeTarjeta).setPadding(10);
+        cardObra.add(new Paragraph("OBRA").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(2));
+        cardObra.add(new Paragraph(obraCompleta).setFontSize(10).setBold());
+        tarjetas.addCell(cardObra);
+
+        document.add(tarjetas);
+
+        // ── 2. DETALLES DEL MANTENIMIENTO ────────────────────────────────────
+        agregarTituloSeccion(document, "2. DETALLES DEL MANTENIMIENTO");
+
+        Table tablaMantenimiento = new Table(UnitValue.createPercentArray(new float[]{28, 72}));
+        tablaMantenimiento.setWidth(UnitValue.createPercentValue(100));
+        SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
+
+        // Fila: Tipo de mantenimiento
+        tablaMantenimiento.addCell(new Cell()
+                .add(new Paragraph("TIPO DE\nMANTENIMIENTO").setFontSize(8).setBold().setFontColor(GRIS_OSCURO))
+                .setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE));
+
+        Cell celdaTipos = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        String tiposCSV = valorVacio(formulario.getTipo_mantenimiento());
+        if (!tiposCSV.isEmpty()) {
+            for (String tipo : tiposCSV.split(",")) {
+                celdaTipos.add(crearChip(tipo));
+            }
+        }
+        tablaMantenimiento.addCell(celdaTipos);
+
+        // Fila: Clase de mantenimiento
+        tablaMantenimiento.addCell(new Cell()
+                .add(new Paragraph("CLASE DE\nMANTENIMIENTO").setFontSize(8).setBold().setFontColor(GRIS_OSCURO))
+                .setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE));
+
+        Cell celdaClases = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        String clasesCSV = valorVacio(formulario.getClases_mantenimiento());
+        if (!clasesCSV.isEmpty()) {
+            for (String clase : clasesCSV.split(",")) {
+                celdaClases.add(crearChip(clase));
+            }
+        }
+        tablaMantenimiento.addCell(celdaClases);
+
+        document.add(tablaMantenimiento);
+    }
+
+    private void agregarDescripcion(Document document, Formulario formulario) {
+        // ── 3. DESCRIPCIÓN DEL TRABAJO REALIZADO ─────────────────────────────
+        agregarTituloSeccion(document, "3. DESCRIPCIÓN DEL TRABAJO REALIZADO");
+
+        // Mismo cuadro grande, con el nuevo estilo visual
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{100}));
         tabla.setWidth(UnitValue.createPercentValue(100));
+        tabla.setMarginBottom(4);
 
-        Cell celda = new Cell()
-                .add(new Paragraph(valorVacio(formulario.getDescripcion())))
+        tabla.addCell(new Cell()
+                .add(new Paragraph(valorVacio(formulario.getDescripcion())).setFontSize(10))
                 .setMinHeight(150)
-                .setBorder(new SolidBorder(GRIS, 0.5f))
-                .setPadding(8);
-        tabla.addCell(celda);
+                .setBorder(new SolidBorder(GRIS_BORDE, 0.8f))
+                .setPadding(10));
         document.add(tabla);
 
-        //Materiales utilizados - Solo si hay materiales que agregar
-        if(formulario.getMateriales_utilizados() != null && !formulario.getMateriales_utilizados().isEmpty())
-        {
-            document.add(new Paragraph("Materiales Utilizados")
-                    .setBold()
-                    .setFontSize(11)
-                    .setMarginTop(10)
-            );
+        // ── 4. MATERIALES UTILIZADOS ─────────────────────────────────────────
+        if (formulario.getMateriales_utilizados() != null && !formulario.getMateriales_utilizados().isEmpty()) {
+            agregarTituloSeccion(document, "4. MATERIALES UTILIZADOS");
 
-            Table tabla_materiales = new Table(UnitValue.createPercentArray(new float[]{20,80}));
-            tabla_materiales.setWidth(UnitValue.createPercentValue(100));
-            SolidBorder borde = new SolidBorder(GRIS, 0.5f);
+            Table tablaMateriales = new Table(UnitValue.createPercentArray(new float[]{20, 80}));
+            tablaMateriales.setWidth(UnitValue.createPercentValue(100));
+            SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
 
-            //Encabezado de la tabla - CANTIDAD
-            Cell cantidad = new Cell()
-                    .add(new Paragraph("CANTIDAD").setBold().setFontSize(10))
-                    .setBorder(borde)
-                    .setPadding(6)
-                    .setBackgroundColor(new DeviceRgb(220, 220, 220));
+            // Encabezado oscuro
+            tablaMateriales.addCell(new Cell()
+                    .add(new Paragraph("CANTIDAD").setBold().setFontSize(10)
+                            .setFontColor(BLANCO).setTextAlignment(TextAlignment.CENTER))
+                    .setBorder(borde).setPadding(8).setBackgroundColor(GRIS_OSCURO)
+                    .setTextAlignment(TextAlignment.CENTER));
 
-            //Encabezado de la tabla - DESCRIPCION
-            Cell descripcion = new Cell()
-                    .add(new Paragraph("DESCRIPCION").setBold().setFontSize(10))
-                    .setBorder(borde)
-                    .setPadding(6)
-                    .setBackgroundColor(new DeviceRgb(220, 220, 220));
+            tablaMateriales.addCell(new Cell()
+                    .add(new Paragraph("DESCRIPCIÓN").setBold().setFontSize(10)
+                            .setFontColor(BLANCO).setTextAlignment(TextAlignment.CENTER))
+                    .setBorder(borde).setPadding(8).setBackgroundColor(GRIS_OSCURO)
+                    .setTextAlignment(TextAlignment.CENTER));
 
-            tabla_materiales.addCell(cantidad);
-            tabla_materiales.addCell(descripcion);
+            for (String material : formulario.getMateriales_utilizados().split(",")) {
+                tablaMateriales.addCell(new Cell()
+                        .add(new Paragraph("1").setFontSize(10).setTextAlignment(TextAlignment.CENTER))
+                        .setBorder(borde).setPadding(8).setTextAlignment(TextAlignment.CENTER));
 
-            //Filas de materiales
-            String[] materiales = formulario.getMateriales_utilizados().split(",");
-
-            for(String material: materiales)
-            {
-                tabla_materiales.addCell(new Cell()
-                        .add(new Paragraph("1").setFontSize(10))
-                        .setBorder(borde)
-                        .setPadding(6)
-                        .setMinHeight(20));
-
-                tabla_materiales.addCell(new Cell()
+                tablaMateriales.addCell(new Cell()
                         .add(new Paragraph(material.trim()).setFontSize(10))
-                        .setBorder(borde)
-                        .setPadding(6)
-                        .setMinHeight(20));
+                        .setBorder(borde).setPadding(8));
             }
-
-            document.add(tabla_materiales);
+            document.add(tablaMateriales);
         }
     }
 
-    private void agregarFirmas(Document document, Formulario formulario, byte[] firmaClienteBytes)
-    {
-        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
-        tabla.setWidth(UnitValue.createPercentValue(100));
-        tabla.setMarginTop(30);
+    private void agregarImagenes(Document document, Formulario formulario, List<byte[]> imagenesBytes) {
+        // ── 5. IMÁGENES DEL SERVICIO ─────────────────────────────────────────
+        agregarTituloSeccion(document, "5. IMÁGENES DEL SERVICIO");
 
-        SolidBorder borde = new SolidBorder(GRIS, 0.5f);
-
-        // Celda ENTREGA
-        Cell celdaEntrega = new Cell()
-                .setBorder(borde)
-                .setPadding(8);
-        celdaEntrega.add(new Paragraph("ENTREGA").setBold());
-        celdaEntrega.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_tecnico())).setFontSize(10));
-        celdaEntrega.add(new Paragraph("Celular: " + valorVacio(formulario.getTelefono_tecnico())).setFontSize(10));
-
-        tabla.addCell(celdaEntrega);
-
-        // Celda RECIBE
-        Cell celdaRecibe = new Cell()
-                .setBorder(borde)
-                .setPadding(8);
-        celdaRecibe.add(new Paragraph("RECIBE").setBold());
-        celdaRecibe.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_recibe())).setFontSize(10));
-        celdaRecibe.add(new Paragraph("Cédula: " + valorVacio(formulario.getCedula_recibe())).setFontSize(10));
-
-        // Firma del cliente — cargada desde bytes en memoria (sin disco)
-        if (firmaClienteBytes != null && firmaClienteBytes.length > 0)
-        {
-            try
-            {
-                Image firmaCliente = new Image(ImageDataFactory.create(firmaClienteBytes));
-                firmaCliente.setWidth(150).setHeight(60);
-                celdaRecibe.add(firmaCliente);
-            }
-            catch (Exception e)
-            {
-                celdaRecibe.add(new Paragraph(""));
-            }
-        }
-
-        tabla.addCell(celdaRecibe);
-        document.add(tabla);
-    }
-
-    private void agregarImagenes(Document document, Formulario formulario, List<byte[]> imagenesBytes)
-    {
-        document.add(new Paragraph("Imagenes del servicio")
-                .setBold()
-                .setFontSize(11)
-                .setMarginTop(15)
-        );
-
-        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        // 4 columnas igual que en la imagen de referencia
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{25, 25, 25, 25}));
         tabla.setWidth(UnitValue.createPercentValue(100));
 
-        // Imágenes cargadas desde bytes en memoria (sin disco)
-        for (byte[] imagenBytes : imagenesBytes)
-        {
-            try
-            {
+        for (byte[] imagenBytes : imagenesBytes) {
+            try {
                 Image imagen = new Image(ImageDataFactory.create(imagenBytes));
-                imagen.setWidth(230).setHeight(180);
-
-                Cell celda = new Cell()
-                        .add(imagen)
-                        .setBorder(new SolidBorder(GRIS, 0.5f))
-                        .setPadding(5)
-                        .setHorizontalAlignment(HorizontalAlignment.CENTER);
-                tabla.addCell(celda);
-            }
-            catch (Exception e)
-            {
+                imagen.setWidth(118).setHeight(100);
                 tabla.addCell(new Cell()
-                        .add(new Paragraph("Imagen no disponible"))
-                        .setBorder(new SolidBorder(GRIS, 0.5f))
-                );
+                        .add(imagen)
+                        .setBorder(new SolidBorder(GRIS_BORDE, 0.5f))
+                        .setPadding(4)
+                        .setHorizontalAlignment(HorizontalAlignment.CENTER));
+            } catch (Exception e) {
+                tabla.addCell(new Cell()
+                        .add(new Paragraph("Imagen no disponible").setFontSize(8))
+                        .setBorder(new SolidBorder(GRIS_BORDE, 0.5f)));
             }
         }
 
-        if (imagenesBytes.size() % 2 != 0)
-        {
-            tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
+        // Rellenar celdas vacías para completar la última fila
+        int remainder = imagenesBytes.size() % 4;
+        if (remainder != 0) {
+            for (int i = 0; i < 4 - remainder; i++) {
+                tabla.addCell(new Cell().setBorder(Border.NO_BORDER));
+            }
         }
 
         document.add(tabla);
+    }
+
+    private void agregarFirmas(Document document, Formulario formulario, byte[] firmaClienteBytes) {
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        tabla.setWidth(UnitValue.createPercentValue(100));
+        tabla.setMarginTop(20);
+
+        SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
+
+        // Tarjeta FIRMA DEL CLIENTE
+        Cell celdaCliente = new Cell().setBorder(borde).setPadding(12);
+        celdaCliente.add(new Paragraph("FIRMA DEL CLIENTE")
+                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
+
+        if (firmaClienteBytes != null && firmaClienteBytes.length > 0) {
+            try {
+                Image firma = new Image(ImageDataFactory.create(firmaClienteBytes));
+                firma.setWidth(150).setHeight(60);
+                celdaCliente.add(firma);
+            } catch (Exception e) {
+                celdaCliente.add(new Paragraph("\n_____________________________").setFontSize(10));
+            }
+        } else {
+            celdaCliente.add(new Paragraph("\n_____________________________").setFontSize(10));
+        }
+        celdaCliente.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_recibe()))
+                .setFontSize(9).setMarginTop(6));
+        celdaCliente.add(new Paragraph("Cédula: " + valorVacio(formulario.getCedula_recibe()))
+                .setFontSize(9));
+        tabla.addCell(celdaCliente);
+
+        // Tarjeta FIRMA DEL TÉCNICO
+        Cell celdaTecnico = new Cell().setBorder(borde).setPadding(12);
+        celdaTecnico.add(new Paragraph("FIRMA DEL TÉCNICO")
+                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
+        celdaTecnico.add(new Paragraph("\n_____________________________").setFontSize(10));
+        celdaTecnico.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_tecnico()))
+                .setFontSize(9).setMarginTop(6));
+        celdaTecnico.add(new Paragraph("Celular: " + valorVacio(formulario.getTelefono_tecnico()))
+                .setFontSize(9));
+        tabla.addCell(celdaTecnico);
+
+        document.add(tabla);
+
+        agregarPie(document);
+    }
+
+    private void agregarPie(Document document) {
+        document.add(new Paragraph("").setMarginTop(20));
+
+        Table footer = new Table(UnitValue.createPercentArray(new float[]{33, 34, 33}));
+        footer.setWidth(UnitValue.createPercentValue(100));
+
+        footer.addCell(new Cell()
+                .add(new Paragraph("Servicio tecnico con calidad,\nseguridad y compromiso.")
+                        .setFontSize(8).setFontColor(BLANCO))
+                .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12));
+
+        footer.addCell(new Cell()
+                .add(new Paragraph("+57 320 487 0078\ninfo@controldemezclas.com")
+                        .setFontSize(8).setFontColor(BLANCO).setTextAlignment(TextAlignment.CENTER))
+                .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12)
+                .setTextAlignment(TextAlignment.CENTER));
+
+        footer.addCell(new Cell()
+                .add(new Paragraph("www.controldemezclas.com")
+                        .setFontSize(8).setFontColor(BLANCO).setTextAlignment(TextAlignment.RIGHT))
+                .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12)
+                .setTextAlignment(TextAlignment.RIGHT));
+
+        document.add(footer);
     }
 
     // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────────
-    // Devuelve el PDF como byte[] sin escribir ningún archivo en disco.
-    // Para volver al modo disco: cambiar la firma a `public String generarPDF(...)`,
-    // reemplazar ByteArrayOutputStream por PdfWriter(rutaCompleta), crear directorios
-    // con Files.createDirectories y devolver el nombre del archivo.
-    public byte[] generarPDF(Formulario formulario, List<byte[]> imagenesBytes, byte[] firmaClienteBytes) throws IOException
-    {
+    public byte[] generarPDF(Formulario formulario, List<byte[]> imagenesBytes, byte[] firmaClienteBytes) throws IOException {
         // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
-        // String nombreArchivo = "informe_" + formulario.getId() + ".pdf";     // [STORAGE]
-        // String rutaCompleta = pdfPath + nombreArchivo;                       // [STORAGE]
-        // Files.createDirectories(Paths.get(pdfPath));                         // [STORAGE]
-        // PdfWriter writer = new PdfWriter(rutaCompleta);                      // [STORAGE]
+        // String nombreArchivo = "informe_" + formulario.getId() + ".pdf";
+        // String rutaCompleta = pdfPath + nombreArchivo;
+        // Files.createDirectories(Paths.get(pdfPath));
+        // PdfWriter writer = new PdfWriter(rutaCompleta);
         // ── FIN MODO DISCO ─────────────────────────────────────────────────────
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -331,32 +382,22 @@ public class PdfService {
         Document document = new Document(pdfDoc, PageSize.A4);
         document.setMargins(20, 30, 20, 30);
 
-        // 1. Encabezado
         agregarEncabezado(document, formulario);
-
-        // 2. Datos Cliente
         agregarDatos(document, formulario);
-
-        // 3. Descripcion del trabajo
         agregarDescripcion(document, formulario);
 
-        // 4. Imagenes desde bytes en memoria
-        if (imagenesBytes != null && !imagenesBytes.isEmpty())
-        {
+        if (imagenesBytes != null && !imagenesBytes.isEmpty()) {
             agregarImagenes(document, formulario, imagenesBytes);
         }
 
-        // 5. Firmas desde bytes en memoria
         agregarFirmas(document, formulario, firmaClienteBytes);
 
         document.close();
 
         // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
-        // return nombreArchivo;                                                // [STORAGE]
+        // return nombreArchivo;
         // ── FIN MODO DISCO ─────────────────────────────────────────────────────
         return baos.toByteArray();
     }
     // ── FIN GENERACIÓN EN MEMORIA ─────────────────────────────────────────────
-
-
 }
