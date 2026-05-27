@@ -49,6 +49,15 @@ public class PdfService {
         return valor != null ? valor : "";
     }
 
+    // Carga un recurso del classpath como bytes (devuelve null si no existe)
+    private byte[] cargarRecurso(String ruta) {
+        try (var stream = getClass().getClassLoader().getResourceAsStream(ruta)) {
+            return stream != null ? stream.readAllBytes() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // Banner superior: barra oscura con acento amarillo diagonal (derecha)
     private static class BannerSuperior implements IEventHandler {
         private static final float BAR_H   = 14f;
@@ -70,6 +79,9 @@ public class PdfService {
                         page.getResources(),
                         pdf);
 
+                // Aislar cambios de color para no afectar el stream principal del documento
+                canvas.saveState();
+
                 // 1 — Barra oscura completa
                 canvas.setFillColor(new DeviceRgb(50, 50, 50));
                 canvas.rectangle(0, h - BAR_H, w, BAR_H);
@@ -84,22 +96,39 @@ public class PdfService {
                 canvas.closePath();
                 canvas.fill();
 
+                // Restaurar estado gráfico — el stream siguiente hereda color negro por defecto
+                canvas.restoreState();
+
                 canvas.release();
             } catch (Exception ignored) { }
         }
     }
 
-    // Encabezado de sección: [cuadro amarillo] [TÍTULO ─────────────────]
-    private void agregarTituloSeccion(Document document, String titulo) {
-        Table tabla = new Table(UnitValue.createPercentArray(new float[]{4, 96}));
+    // Encabezado de sección: [cuadro amarillo (+ icono opcional)] [TÍTULO ─────────────────]
+    private void agregarTituloSeccion(Document document, String titulo, String iconoRuta) {
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{5, 95}));
         tabla.setWidth(UnitValue.createPercentValue(100));
         tabla.setMarginTop(14).setMarginBottom(6);
 
-        tabla.addCell(new Cell()
+        Cell cellAmarilla = new Cell()
                 .setBackgroundColor(AMARILLO)
-                .setHeight(26)
+                .setHeight(28)
                 .setBorder(Border.NO_BORDER)
-                .setPadding(0));
+                .setPadding(3)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setHorizontalAlignment(HorizontalAlignment.CENTER);
+
+        if (iconoRuta != null) {
+            byte[] icoBytes = cargarRecurso(iconoRuta);
+            if (icoBytes != null) {
+                try {
+                    Image ico = new Image(ImageDataFactory.create(icoBytes));
+                    ico.setWidth(18).setHeight(18);
+                    cellAmarilla.add(ico);
+                } catch (Exception ignored) {}
+            }
+        }
+        tabla.addCell(cellAmarilla);
 
         tabla.addCell(new Cell()
                 .add(new Paragraph(titulo)
@@ -143,26 +172,64 @@ public class PdfService {
         }
         header.addCell(celdaLogo);
 
-        // Código de servicio y Fecha en cajas con borde amarillo
-        Table tablaCodigoFecha = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        // Código de servicio y Fecha: [ico_codigo][texto código]|[ico_fecha][texto fecha]
+        // Layout sin recuadros — separados por una línea vertical gris
+        Table tablaCodigoFecha = new Table(UnitValue.createPercentArray(new float[]{16, 36, 16, 32}));
         tablaCodigoFecha.setWidth(UnitValue.createPercentValue(100));
 
+        // ── Icono clipboard (código) ─────────────────────────────────────────
+        Cell icoCodigoCell = new Cell()
+                .setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setHorizontalAlignment(HorizontalAlignment.CENTER)
+                .setPadding(4);
+        byte[] icoCodigoBytes = cargarRecurso("static/logo_numeral.png");
+        if (icoCodigoBytes != null) {
+            try {
+                Image icoImg = new Image(ImageDataFactory.create(icoCodigoBytes));
+                icoImg.setWidth(30).setHeight(30);
+                icoCodigoCell.add(icoImg);
+            } catch (Exception ignored) {}
+        }
+        tablaCodigoFecha.addCell(icoCodigoCell);
+
+        // ── Texto: CÓDIGO DE SERVICIO + valor (borde derecho = línea separadora gris) ──
         Cell celdaCodigo = new Cell()
-                .setBorder(new SolidBorder(AMARILLO, 1.5f))
-                .setPadding(8).setVerticalAlignment(VerticalAlignment.MIDDLE);
+                .setBorder(Border.NO_BORDER)
+                .setBorderRight(new SolidBorder(GRIS_BORDE, 1.5f))
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setPaddingTop(4).setPaddingBottom(4).setPaddingLeft(2).setPaddingRight(10);
         celdaCodigo.add(new Paragraph("CÓDIGO DE SERVICIO")
-                .setFontSize(7).setFontColor(GRIS_LABEL).setTextAlignment(TextAlignment.CENTER).setMarginBottom(2));
+                .setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(2));
         celdaCodigo.add(new Paragraph(valorVacio(formulario.getCodigo_informe()))
-                .setFontSize(18).setBold().setFontColor(GRIS_OSCURO).setTextAlignment(TextAlignment.CENTER));
+                .setFontSize(16).setBold().setFontColor(GRIS_OSCURO));
         tablaCodigoFecha.addCell(celdaCodigo);
 
+        // ── Icono calendario (fecha) ─────────────────────────────────────────
+        Cell icoFechaCell = new Cell()
+                .setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setHorizontalAlignment(HorizontalAlignment.CENTER)
+                .setPaddingLeft(10).setPaddingRight(4);
+        byte[] icoFechaBytes = cargarRecurso("static/logo_calendario.png");
+        if (icoFechaBytes != null) {
+            try {
+                Image icoImg = new Image(ImageDataFactory.create(icoFechaBytes));
+                icoImg.setWidth(30).setHeight(30);
+                icoFechaCell.add(icoImg);
+            } catch (Exception ignored) {}
+        }
+        tablaCodigoFecha.addCell(icoFechaCell);
+
+        // ── Texto: FECHA + valor ─────────────────────────────────────────────
         Cell celdaFecha = new Cell()
-                .setBorder(new SolidBorder(AMARILLO, 1.5f))
-                .setPadding(8).setVerticalAlignment(VerticalAlignment.MIDDLE);
+                .setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+                .setPaddingTop(4).setPaddingBottom(4).setPaddingLeft(2).setPaddingRight(4);
         celdaFecha.add(new Paragraph("FECHA")
-                .setFontSize(7).setFontColor(GRIS_LABEL).setTextAlignment(TextAlignment.CENTER).setMarginBottom(2));
+                .setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(2));
         celdaFecha.add(new Paragraph(formulario.getFecha() != null ? formulario.getFecha().toString() : "")
-                .setFontSize(11).setBold().setFontColor(GRIS_OSCURO).setTextAlignment(TextAlignment.CENTER));
+                .setFontSize(11).setBold().setFontColor(GRIS_OSCURO));
         tablaCodigoFecha.addCell(celdaFecha);
 
         header.addCell(new Cell()
@@ -179,7 +246,7 @@ public class PdfService {
 
     private void agregarDatos(Document document, Formulario formulario) {
         // ── 1. DATOS DEL CLIENTE ─────────────────────────────────────────────
-        agregarTituloSeccion(document, "1. DATOS DEL CLIENTE");
+        agregarTituloSeccion(document, "1. DATOS DEL CLIENTE", "static/persona.jpg");
 
         Table tarjetas = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tarjetas.setWidth(UnitValue.createPercentValue(100));
@@ -211,7 +278,7 @@ public class PdfService {
         document.add(tarjetas);
 
         // ── 2. DETALLES DEL MANTENIMIENTO ────────────────────────────────────
-        agregarTituloSeccion(document, "2. DETALLES DEL MANTENIMIENTO");
+        agregarTituloSeccion(document, "2. DETALLES DEL MANTENIMIENTO", "static/herramienta.jpg");
 
         Table tablaMantenimiento = new Table(UnitValue.createPercentArray(new float[]{28, 72}));
         tablaMantenimiento.setWidth(UnitValue.createPercentValue(100));
@@ -250,7 +317,7 @@ public class PdfService {
 
     private void agregarDescripcion(Document document, Formulario formulario) {
         // ── 3. DESCRIPCIÓN DEL TRABAJO REALIZADO ─────────────────────────────
-        agregarTituloSeccion(document, "3. DESCRIPCIÓN DEL TRABAJO REALIZADO");
+        agregarTituloSeccion(document, "3. DESCRIPCIÓN DEL TRABAJO REALIZADO", "static/doc.jpg");
 
         // Mismo cuadro grande, con el nuevo estilo visual
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{100}));
@@ -266,7 +333,7 @@ public class PdfService {
 
         // ── 4. MATERIALES UTILIZADOS ─────────────────────────────────────────
         if (formulario.getMateriales_utilizados() != null && !formulario.getMateriales_utilizados().isEmpty()) {
-            agregarTituloSeccion(document, "4. MATERIALES UTILIZADOS");
+            agregarTituloSeccion(document, "4. MATERIALES UTILIZADOS", "static/caja.jpg");
 
             Table tablaMateriales = new Table(UnitValue.createPercentArray(new float[]{20, 80}));
             tablaMateriales.setWidth(UnitValue.createPercentValue(100));
@@ -300,7 +367,7 @@ public class PdfService {
 
     private void agregarImagenes(Document document, Formulario formulario, List<byte[]> imagenesBytes) {
         // ── 5. IMÁGENES DEL SERVICIO ─────────────────────────────────────────
-        agregarTituloSeccion(document, "5. IMÁGENES DEL SERVICIO");
+        agregarTituloSeccion(document, "5. IMÁGENES DEL SERVICIO", "static/camara.jpg");
 
         // 4 columnas igual que en la imagen de referencia
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{25, 25, 25, 25}));
@@ -364,9 +431,9 @@ public class PdfService {
 
         // Tarjeta FIRMA DEL TÉCNICO
         Cell celdaTecnico = new Cell().setBorder(borde).setPadding(12);
-        celdaTecnico.add(new Paragraph("FIRMA DEL TÉCNICO")
-                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
-        celdaTecnico.add(new Paragraph("\n_____________________________").setFontSize(10));
+        //celdaTecnico.add(new Paragraph("FIRMA DEL TÉCNICO")
+        //        .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
+        //celdaTecnico.add(new Paragraph("\n_____________________________").setFontSize(10));
         celdaTecnico.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_tecnico()))
                 .setFontSize(9).setMarginTop(6));
         celdaTecnico.add(new Paragraph("Celular: " + valorVacio(formulario.getTelefono_tecnico()))
@@ -390,13 +457,13 @@ public class PdfService {
                 .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12));
 
         footer.addCell(new Cell()
-                .add(new Paragraph("+57 320 487 0078\ninfo@controldemezclas.com")
+                .add(new Paragraph("+57 320 487 0078\nproduccion@controlmezclas.com")
                         .setFontSize(8).setFontColor(BLANCO).setTextAlignment(TextAlignment.CENTER))
                 .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12)
                 .setTextAlignment(TextAlignment.CENTER));
 
         footer.addCell(new Cell()
-                .add(new Paragraph("www.controldemezclas.com")
+                .add(new Paragraph("www.controlmezclas.com")
                         .setFontSize(8).setFontColor(BLANCO).setTextAlignment(TextAlignment.RIGHT))
                 .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12)
                 .setTextAlignment(TextAlignment.RIGHT));
