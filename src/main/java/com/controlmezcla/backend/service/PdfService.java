@@ -3,9 +3,15 @@ package com.controlmezcla.backend.service;
 import com.controlmezcla.backend.model.Formulario;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.events.Event;
+import com.itextpdf.kernel.events.IEventHandler;
+import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.geom.PageSize;
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
@@ -43,6 +49,46 @@ public class PdfService {
         return valor != null ? valor : "";
     }
 
+    // Banner superior: barra oscura con acento amarillo diagonal (derecha)
+    private static class BannerSuperior implements IEventHandler {
+        private static final float BAR_H   = 14f;
+        private static final float AMARILLO_TOP_X_OFFSET = 60f;   // cuánto ocupa el amarillo en la parte superior
+        private static final float AMARILLO_BOT_X_OFFSET = 92f;   // cuánto ocupa en la parte inferior (más ancho = diagonal más pronunciada)
+
+        @Override
+        public void handleEvent(Event event) {
+            PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
+            PdfPage   page   = docEvent.getPage();
+            PdfDocument pdf  = docEvent.getDocument();
+            Rectangle  size  = page.getPageSize();
+            float w = size.getWidth();
+            float h = size.getHeight();
+
+            try {
+                PdfCanvas canvas = new PdfCanvas(
+                        page.newContentStreamBefore(),
+                        page.getResources(),
+                        pdf);
+
+                // 1 — Barra oscura completa
+                canvas.setFillColor(new DeviceRgb(50, 50, 50));
+                canvas.rectangle(0, h - BAR_H, w, BAR_H);
+                canvas.fill();
+
+                // 2 — Acento amarillo (paralelogramo con borde diagonal)
+                canvas.setFillColor(new DeviceRgb(255, 193, 7));
+                canvas.moveTo(w - AMARILLO_TOP_X_OFFSET, h);           // esquina superior-izquierda del amarillo
+                canvas.lineTo(w,                          h);           // esquina superior-derecha
+                canvas.lineTo(w,                          h - BAR_H);  // esquina inferior-derecha
+                canvas.lineTo(w - AMARILLO_BOT_X_OFFSET, h - BAR_H);  // esquina inferior-izquierda (más a la izquierda → diagonal)
+                canvas.closePath();
+                canvas.fill();
+
+                canvas.release();
+            } catch (Exception ignored) { }
+        }
+    }
+
     // Encabezado de sección: [cuadro amarillo] [TÍTULO ─────────────────]
     private void agregarTituloSeccion(Document document, String titulo) {
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{4, 96}));
@@ -78,15 +124,6 @@ public class PdfService {
     }
 
     private void agregarEncabezado(Document document, Formulario formulario) throws IOException {
-        // Barra oscura superior
-        Table barraTop = new Table(UnitValue.createPercentArray(new float[]{100}));
-        barraTop.setWidth(UnitValue.createPercentValue(100));
-        barraTop.setMarginBottom(8);
-        barraTop.addCell(new Cell()
-                .add(new Paragraph(""))
-                .setBackgroundColor(GRIS_OSCURO).setHeight(10).setBorder(Border.NO_BORDER));
-        document.add(barraTop);
-
         // Fila principal: Logo (izquierda) | Código + Fecha (derecha)
         Table header = new Table(UnitValue.createPercentArray(new float[]{55, 45}));
         header.setWidth(UnitValue.createPercentValue(100));
@@ -379,8 +416,13 @@ public class PdfService {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PdfWriter writer = new PdfWriter(baos);
         PdfDocument pdfDoc = new PdfDocument(writer);
+
+        // Registrar banner superior (negro + diagonal amarilla) en cada página
+        pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new BannerSuperior());
+
         Document document = new Document(pdfDoc, PageSize.A4);
-        document.setMargins(20, 30, 20, 30);
+        // Margen superior = 28pt: 14pt del banner + 14pt de espacio blanco visible
+        document.setMargins(28, 30, 20, 30);
 
         agregarEncabezado(document, formulario);
         agregarDatos(document, formulario);
