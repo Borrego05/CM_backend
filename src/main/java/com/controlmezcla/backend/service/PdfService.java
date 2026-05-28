@@ -12,6 +12,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.layout.Canvas;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
@@ -101,6 +102,51 @@ public class PdfService {
                 canvas.restoreState();
 
                 canvas.release();
+            } catch (Exception ignored) { }
+        }
+    }
+
+    // Marca de agua: imagen centrada con opacidad baja (efecto gris claro)
+    private static class MarcaAgua implements IEventHandler {
+        private final byte[] imagenBytes;
+
+        MarcaAgua(byte[] imagenBytes) {
+            this.imagenBytes = imagenBytes;
+        }
+
+        @Override
+        public void handleEvent(Event event) {
+            if (imagenBytes == null) return;
+            PdfDocumentEvent docEvent = (PdfDocumentEvent) event;
+            PdfPage     page = docEvent.getPage();
+            PdfDocument pdf  = docEvent.getDocument();
+            Rectangle   size = page.getPageSize();
+            float w = size.getWidth();
+            float h = size.getHeight();
+
+            try {
+                var imgData = ImageDataFactory.create(imagenBytes);
+
+                // Calcular posición centrada manteniendo la proporción original
+                float targetW = 300f;
+                float targetH = targetW * imgData.getHeight() / imgData.getWidth();
+                float x = (w - targetW) / 2f;
+                float y = (h - targetH) / 2f;
+
+                // Usar Canvas de layout para aplicar opacidad sin PdfExtGState directo
+                PdfCanvas pdfCanvas = new PdfCanvas(
+                        page.newContentStreamBefore(),
+                        page.getResources(),
+                        pdf);
+
+                Image img = new Image(imgData);
+                img.setWidth(targetW).setHeight(targetH);
+                img.setFixedPosition(x, y);
+                img.setOpacity(0.10f);   // 10 % → efecto gris claro de fondo
+
+                Canvas layoutCanvas = new Canvas(pdfCanvas, new Rectangle(0, 0, w, h));
+                layoutCanvas.add(img);
+                layoutCanvas.close();
             } catch (Exception ignored) { }
         }
     }
@@ -408,19 +454,19 @@ public class PdfService {
     private void agregarFirmas(Document document, Formulario formulario, byte[] firmaClienteBytes) {
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
-        tabla.setMarginTop(20);
+        tabla.setMarginTop(12);
 
         SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
 
         // Tarjeta FIRMA DEL CLIENTE
-        Cell celdaCliente = new Cell().setBorder(borde).setPadding(12);
+        Cell celdaCliente = new Cell().setBorder(borde).setPadding(8);
         celdaCliente.add(new Paragraph("FIRMA DEL CLIENTE")
-                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
+                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(6));
 
         if (firmaClienteBytes != null && firmaClienteBytes.length > 0) {
             try {
                 Image firma = new Image(ImageDataFactory.create(firmaClienteBytes));
-                firma.setWidth(150).setHeight(60);
+                firma.setWidth(120).setHeight(48);
                 celdaCliente.add(firma);
             } catch (Exception e) {
                 celdaCliente.add(new Paragraph("\n_____________________________").setFontSize(10));
@@ -429,13 +475,13 @@ public class PdfService {
             celdaCliente.add(new Paragraph("\n_____________________________").setFontSize(10));
         }
         celdaCliente.add(new Paragraph("Nombre: " + valorVacio(formulario.getNombre_recibe()))
-                .setFontSize(9).setMarginTop(6));
+                .setFontSize(9).setMarginTop(4));
         celdaCliente.add(new Paragraph("Cédula: " + valorVacio(formulario.getCedula_recibe()))
                 .setFontSize(9));
         tabla.addCell(celdaCliente);
 
         // Tarjeta FIRMA DEL TÉCNICO
-        Cell celdaTecnico = new Cell().setBorder(borde).setPadding(12);
+        Cell celdaTecnico = new Cell().setBorder(borde).setPadding(8);
         celdaTecnico.add(new Paragraph("INFORMACIÓN DEL TECNICO")
                 .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
         //celdaTecnico.add(new Paragraph("\n_____________________________").setFontSize(10));
@@ -502,6 +548,12 @@ public class PdfService {
 
         // Registrar banner superior (negro + diagonal amarilla) en cada página
         pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new BannerSuperior());
+
+        // Marca de agua centrada en cada página (imagen gris claro de fondo)
+        byte[] marcaAguaBytes = cargarRecurso("static/marca_agua.png");
+        if (marcaAguaBytes != null) {
+            pdfDoc.addEventHandler(PdfDocumentEvent.START_PAGE, new MarcaAgua(marcaAguaBytes));
+        }
 
         Document document = new Document(pdfDoc, PageSize.A4);
         // Margen superior = 28pt: 14pt del banner + 14pt de espacio blanco visible

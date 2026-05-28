@@ -358,33 +358,33 @@ public class ActaSiloPdfService {
     private void AgregarFirmas(Document documento, ActaSilo actaSilo, byte[] firmaClienteBytes) {
         Table tabla_firmas = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla_firmas.setWidth(UnitValue.createPercentValue(100));
-        tabla_firmas.setMarginTop(30);
+        tabla_firmas.setMarginTop(20);
 
         SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
 
         // ENTREGA
-        Cell celda_entrega = new Cell().setBorder(borde).setPadding(12);
+        Cell celda_entrega = new Cell().setBorder(borde).setPadding(8);
         celda_entrega.add(new Paragraph("ENTREGA")
-                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
+                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(6));
         celda_entrega.add(new Paragraph("Nombre: " + valorVacio(actaSilo.getNombre_tecnico()))
-                .setFontSize(9).setMarginTop(6));
+                .setFontSize(9).setMarginTop(4));
         celda_entrega.add(new Paragraph("Celular: " + valorVacio(actaSilo.getTelefono_tecnico()))
                 .setFontSize(9));
         tabla_firmas.addCell(celda_entrega);
 
         // RECIBE
-        Cell celda_recibe = new Cell().setBorder(borde).setPadding(12);
+        Cell celda_recibe = new Cell().setBorder(borde).setPadding(8);
         celda_recibe.add(new Paragraph("RECIBE")
-                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(8));
+                .setBold().setFontSize(9).setFontColor(GRIS_OSCURO).setMarginBottom(6));
         celda_recibe.add(new Paragraph("Nombre: " + valorVacio(actaSilo.getNombre_recibe()))
-                .setFontSize(9).setMarginTop(6));
+                .setFontSize(9).setMarginTop(4));
         celda_recibe.add(new Paragraph("Cédula: " + valorVacio(actaSilo.getCedula_recibe()))
                 .setFontSize(9));
 
         if (firmaClienteBytes != null && firmaClienteBytes.length > 0) {
             try {
                 Image firmaImg = new Image(ImageDataFactory.create(firmaClienteBytes));
-                firmaImg.setWidth(150).setHeight(60);
+                firmaImg.setWidth(120).setHeight(48);
                 celda_recibe.add(firmaImg);
             } catch (Exception e) {
                 celda_recibe.add(new Paragraph(""));
