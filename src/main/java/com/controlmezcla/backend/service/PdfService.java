@@ -111,20 +111,18 @@ public class PdfService {
         tabla.setWidth(UnitValue.createPercentValue(100));
         tabla.setMarginTop(14).setMarginBottom(6);
 
-        // Div amarillo con esquinas redondeadas (radio 8 pt ≈ 20°)
+        // Div amarillo con esquinas redondeadas — tamaño ajustado al icono interior
         Div divAmarillo = new Div()
                 .setBackgroundColor(AMARILLO)
-                .setBorderRadius(new BorderRadius(8f))
-                .setMinHeight(28)
-                .setPaddingTop(5).setPaddingBottom(5)
-                .setPaddingLeft(4).setPaddingRight(4);
+                .setBorderRadius(new BorderRadius(6f))
+                .setPadding(4);
 
         if (iconoRuta != null) {
             byte[] icoBytes = cargarRecurso(iconoRuta);
             if (icoBytes != null) {
                 try {
                     Image ico = new Image(ImageDataFactory.create(icoBytes));
-                    ico.setWidth(18).setHeight(18)
+                    ico.setWidth(14).setHeight(14)
                        .setHorizontalAlignment(HorizontalAlignment.CENTER);
                     divAmarillo.add(ico);
                 } catch (Exception ignored) {}
@@ -374,7 +372,7 @@ public class PdfService {
 
     private void agregarImagenes(Document document, Formulario formulario, List<byte[]> imagenesBytes) {
         // ── 5. IMÁGENES DEL SERVICIO ─────────────────────────────────────────
-        agregarTituloSeccion(document, "5. IMÁGENES DEL SERVICIO", "static/camara.pnggi");
+        agregarTituloSeccion(document, "5. IMÁGENES DEL SERVICIO", "static/camara.png");
 
         // 4 columnas igual que en la imagen de referencia
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{25, 25, 25, 25}));
