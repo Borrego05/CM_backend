@@ -20,6 +20,7 @@ import com.itextpdf.layout.element.Div;
 import com.itextpdf.layout.element.Image;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.BorderRadius;
 import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
@@ -110,25 +111,31 @@ public class PdfService {
         tabla.setWidth(UnitValue.createPercentValue(100));
         tabla.setMarginTop(14).setMarginBottom(6);
 
-        Cell cellAmarilla = new Cell()
+        // Div amarillo con esquinas redondeadas (radio 8 pt ≈ 20°)
+        Div divAmarillo = new Div()
                 .setBackgroundColor(AMARILLO)
-                .setHeight(28)
-                .setBorder(Border.NO_BORDER)
-                .setPadding(3)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                .setHorizontalAlignment(HorizontalAlignment.CENTER);
+                .setBorderRadius(new BorderRadius(8f))
+                .setMinHeight(28)
+                .setPaddingTop(5).setPaddingBottom(5)
+                .setPaddingLeft(4).setPaddingRight(4);
 
         if (iconoRuta != null) {
             byte[] icoBytes = cargarRecurso(iconoRuta);
             if (icoBytes != null) {
                 try {
                     Image ico = new Image(ImageDataFactory.create(icoBytes));
-                    ico.setWidth(18).setHeight(18);
-                    cellAmarilla.add(ico);
+                    ico.setWidth(18).setHeight(18)
+                       .setHorizontalAlignment(HorizontalAlignment.CENTER);
+                    divAmarillo.add(ico);
                 } catch (Exception ignored) {}
             }
         }
-        tabla.addCell(cellAmarilla);
+
+        tabla.addCell(new Cell()
+                .add(divAmarillo)
+                .setBorder(Border.NO_BORDER)
+                .setPadding(0)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE));
 
         tabla.addCell(new Cell()
                 .add(new Paragraph(titulo)
@@ -367,7 +374,7 @@ public class PdfService {
 
     private void agregarImagenes(Document document, Formulario formulario, List<byte[]> imagenesBytes) {
         // ── 5. IMÁGENES DEL SERVICIO ─────────────────────────────────────────
-        agregarTituloSeccion(document, "5. IMÁGENES DEL SERVICIO", "static/camara.jpg");
+        agregarTituloSeccion(document, "5. IMÁGENES DEL SERVICIO", "static/camara.pnggi");
 
         // 4 columnas igual que en la imagen de referencia
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{25, 25, 25, 25}));
@@ -451,21 +458,32 @@ public class PdfService {
         Table footer = new Table(UnitValue.createPercentArray(new float[]{33, 34, 33}));
         footer.setWidth(UnitValue.createPercentValue(100));
 
+        SolidBorder separadorPie = new SolidBorder(new DeviceRgb(100, 100, 100), 1f);
+
         footer.addCell(new Cell()
                 .add(new Paragraph("Servicio tecnico con calidad,\nseguridad y compromiso.")
                         .setFontSize(8).setFontColor(BLANCO))
-                .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12));
+                .setBackgroundColor(GRIS_OSCURO)
+                .setBorder(Border.NO_BORDER)
+                .setBorderRight(separadorPie)
+                .setPadding(12));
 
         footer.addCell(new Cell()
                 .add(new Paragraph("+57 320 487 0078\nproduccion@controlmezclas.com")
                         .setFontSize(8).setFontColor(BLANCO).setTextAlignment(TextAlignment.CENTER))
-                .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12)
+                .setBackgroundColor(GRIS_OSCURO)
+                .setBorder(Border.NO_BORDER)
+                .setBorderRight(separadorPie)
+                .setPadding(12)
                 .setTextAlignment(TextAlignment.CENTER));
 
         footer.addCell(new Cell()
                 .add(new Paragraph("www.controlmezclas.com")
                         .setFontSize(8).setFontColor(BLANCO).setTextAlignment(TextAlignment.RIGHT))
-                .setBackgroundColor(GRIS_OSCURO).setBorder(Border.NO_BORDER).setPadding(12)
+                .setBackgroundColor(GRIS_OSCURO)
+                .setBorder(Border.NO_BORDER)
+                .setBorderRight(separadorPie)
+                .setPadding(12)
                 .setTextAlignment(TextAlignment.RIGHT));
 
         document.add(footer);
