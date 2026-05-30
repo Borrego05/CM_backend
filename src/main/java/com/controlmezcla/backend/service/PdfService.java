@@ -40,12 +40,19 @@ public class PdfService {
     // @Value("${app.storage.imagenes}")  private String imagenesPath;
     // @Value("${app.storage.firmas}")    private String firmasPath;
 
+    private final R2StorageService r2StorageService;
+
+    public PdfService(R2StorageService r2StorageService) {
+        this.r2StorageService = r2StorageService;
+    }
+
     private static final DeviceRgb AMARILLO       = new DeviceRgb(255, 193, 7);
     private static final DeviceRgb AMARILLO_SUAVE = new DeviceRgb(255, 248, 220);
     private static final DeviceRgb GRIS_OSCURO    = new DeviceRgb(50, 50, 50);
     private static final DeviceRgb GRIS_BORDE     = new DeviceRgb(200, 200, 200);
     private static final DeviceRgb GRIS_LABEL     = new DeviceRgb(120, 120, 120);
     private static final DeviceRgb BLANCO         = new DeviceRgb(255, 255, 255);
+
 
     private String valorVacio(String valor) {
         return valor != null ? valor : "";
@@ -574,7 +581,15 @@ public class PdfService {
         // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
         // return nombreArchivo;
         // ── FIN MODO DISCO ─────────────────────────────────────────────────────
-        return baos.toByteArray();
+
+        byte[] pdf_generado = baos.toByteArray();
+        r2StorageService.guardar_informe(
+                formulario.getCliente(),
+                formulario.getCodigo_informe(),
+                imagenesBytes,
+                pdf_generado
+        );
+        return pdf_generado;
     }
     // ── FIN GENERACIÓN EN MEMORIA ─────────────────────────────────────────────
 }
