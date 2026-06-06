@@ -19,6 +19,9 @@ public class R2StorageService {
     @Value("${R2_BUCKET}")
     private String bucket;
 
+    @Value("${r2.enabled}")
+    private boolean enabled;
+
     public R2StorageService(S3Client s3Client) {
         this.s3Client = s3Client;
     }
@@ -54,6 +57,12 @@ public class R2StorageService {
                 .replaceAll("[^a-z0-9_\\-]", "_");
         String ruta_cliente = cliente_normalizado + "/";
         String ruta_informe = cliente_normalizado + "/" + codigo_informe + "/";
+
+        if(!enabled)
+        {
+            System.out.println("R2 deshabilitado en ambiente de pruebas local - Se salta la subida de archivos");
+            return;
+        }
 
         if(existe_directorio(ruta_informe))
         {
