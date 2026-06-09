@@ -12,6 +12,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
@@ -355,7 +356,7 @@ public class ActaSiloPdfService {
         document.add(footer);
     }
 
-    private void AgregarFirmas(Document documento, ActaSilo actaSilo, byte[] firmaClienteBytes) {
+    private void AgregarFirmas(Document documento, PdfDocument pdfDoc, ActaSilo actaSilo, byte[] firmaClienteBytes) {
         Table tabla_firmas = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla_firmas.setWidth(UnitValue.createPercentValue(100));
         tabla_firmas.setMarginTop(20);
@@ -394,8 +395,72 @@ public class ActaSiloPdfService {
 
         documento.add(tabla_firmas);
 
-        // Pie de página igual al Informe de Servicios
+        agregarCalificacion(documento, pdfDoc, actaSilo);
         agregarPie(documento);
+    }
+
+    private void agregarCalificacion(Document documento, PdfDocument pdfDoc, ActaSilo acta) {
+        if (acta.getCalificacion() == null && (acta.getComentario_calificacion() == null || acta.getComentario_calificacion().isEmpty())) {
+            return;
+        }
+
+        agregarTituloSeccion(documento, "CALIFICA NUESTRO SERVICIO", null);
+
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        tabla.setWidth(UnitValue.createPercentValue(100));
+        SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
+
+        // Celda de estrellas
+        Cell celdaEstrellas = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaEstrellas.add(new Paragraph("CALIFICACION").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(8));
+        int cal = acta.getCalificacion() != null ? acta.getCalificacion() : 0;
+        Table filaEstrellas = new Table(5);
+        filaEstrellas.setWidth(UnitValue.createPointValue(5 * 26f));
+        for (int i = 1; i <= 5; i++) {
+            Image imgEstrella = crearEstrella(pdfDoc, i <= cal, 22f);
+            imgEstrella.setMarginRight(4);
+            filaEstrellas.addCell(new Cell().add(imgEstrella).setBorder(Border.NO_BORDER).setPadding(0));
+        }
+        celdaEstrellas.add(filaEstrellas);
+        tabla.addCell(celdaEstrellas);
+
+        // Celda de comentario
+        Cell celdaComentario = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaComentario.add(new Paragraph("COMENTARIOS").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(6));
+        String comentario = acta.getComentario_calificacion() != null ? acta.getComentario_calificacion() : "";
+        celdaComentario.add(new Paragraph(comentario).setFontSize(10));
+        tabla.addCell(celdaComentario);
+
+        documento.add(tabla);
+    }
+
+    // Dibuja una estrella de 5 puntas como PdfFormXObject y la devuelve como Image de layout
+    private Image crearEstrella(PdfDocument pdfDoc, boolean llena, float size) {
+        PdfFormXObject xobj = new PdfFormXObject(new Rectangle(size, size));
+        PdfCanvas canvas = new PdfCanvas(xobj, pdfDoc);
+
+        float cx = size / 2f;
+        float cy = size / 2f;
+        float outerR = size / 2f * 0.95f;
+        float innerR = outerR * 0.40f;
+        int puntas = 5;
+
+        canvas.saveState();
+        canvas.setFillColor(llena ? AMARILLO : new DeviceRgb(210, 210, 210));
+
+        for (int i = 0; i < puntas * 2; i++) {
+            double angle = Math.PI / 2.0 - i * Math.PI / puntas;
+            float r = (i % 2 == 0) ? outerR : innerR;
+            float x = cx + (float)(r * Math.cos(angle));
+            float y = cy + (float)(r * Math.sin(angle));
+            if (i == 0) canvas.moveTo(x, y);
+            else        canvas.lineTo(x, y);
+        }
+        canvas.closePath().fill();
+        canvas.restoreState();
+        canvas.release();
+
+        return new Image(xobj);
     }
 
     // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────────
@@ -417,7 +482,7 @@ public class ActaSiloPdfService {
             AgregarImagenes(documento, imagenesBytes);
         }
 
-        AgregarFirmas(documento, acta, firmaClienteBytes);
+        AgregarFirmas(documento, pdf_doc, acta, firmaClienteBytes);
 
         documento.close();
         return baos.toByteArray();

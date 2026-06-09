@@ -12,6 +12,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.xobject.PdfFormXObject;
 import com.itextpdf.layout.Canvas;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
@@ -458,7 +459,7 @@ public class PdfService {
         document.add(tabla);
     }
 
-    private void agregarFirmas(Document document, Formulario formulario, byte[] firmaClienteBytes) {
+    private void agregarFirmas(Document document, PdfDocument pdfDoc, Formulario formulario, byte[] firmaClienteBytes) {
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
         tabla.setMarginTop(12);
@@ -500,7 +501,73 @@ public class PdfService {
 
         document.add(tabla);
 
+        agregarCalificacion(document, pdfDoc, formulario);
         agregarPie(document);
+    }
+
+    private void agregarCalificacion(Document document, PdfDocument pdfDoc, Formulario formulario) {
+        if (formulario.getCalificacion() == null && (formulario.getComentario_calificacion() == null || formulario.getComentario_calificacion().isEmpty())) {
+            return;
+        }
+
+        agregarTituloSeccion(document, "CALIFICA NUESTRO SERVICIO", null);
+
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        tabla.setWidth(UnitValue.createPercentValue(100));
+        SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
+
+        // Celda de estrellas
+        Cell celdaEstrellas = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaEstrellas.add(new Paragraph("CALIFICACION").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(8));
+        int cal = formulario.getCalificacion() != null ? formulario.getCalificacion() : 0;
+        Table filaEstrellas = new Table(5);
+        filaEstrellas.setWidth(UnitValue.createPointValue(5 * 26f));
+        for (int i = 1; i <= 5; i++) {
+            Image imgEstrella = crearEstrella(pdfDoc, i <= cal, 22f);
+            imgEstrella.setMarginRight(4);
+            filaEstrellas.addCell(new Cell().add(imgEstrella).setBorder(Border.NO_BORDER).setPadding(0));
+        }
+        celdaEstrellas.add(filaEstrellas);
+        tabla.addCell(celdaEstrellas);
+
+        // Celda de comentario
+        Cell celdaComentario = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaComentario.add(new Paragraph("COMENTARIOS").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(6));
+        String comentario = formulario.getComentario_calificacion() != null ? formulario.getComentario_calificacion() : "";
+        celdaComentario.add(new Paragraph(comentario).setFontSize(10));
+        tabla.addCell(celdaComentario);
+
+        document.add(tabla);
+    }
+
+    // Dibuja una estrella de 5 puntas como PdfFormXObject y la devuelve como Image de layout
+    private Image crearEstrella(PdfDocument pdfDoc, boolean llena, float size) {
+        PdfFormXObject xobj = new PdfFormXObject(new Rectangle(size, size));
+        PdfCanvas canvas = new PdfCanvas(xobj, pdfDoc);
+
+        float cx = size / 2f;
+        float cy = size / 2f;
+        float outerR = size / 2f * 0.95f;
+        float innerR = outerR * 0.40f;
+        int puntas = 5;
+
+        canvas.saveState();
+        canvas.setFillColor(llena ? AMARILLO : new DeviceRgb(210, 210, 210));
+
+        for (int i = 0; i < puntas * 2; i++) {
+            // ángulo: empieza en la punta superior (π/2) y gira en sentido horario
+            double angle = Math.PI / 2.0 - i * Math.PI / puntas;
+            float r = (i % 2 == 0) ? outerR : innerR;
+            float x = cx + (float)(r * Math.cos(angle));
+            float y = cy + (float)(r * Math.sin(angle));
+            if (i == 0) canvas.moveTo(x, y);
+            else        canvas.lineTo(x, y);
+        }
+        canvas.closePath().fill();
+        canvas.restoreState();
+        canvas.release();
+
+        return new Image(xobj);
     }
 
     private void agregarPie(Document document) {
@@ -574,7 +641,7 @@ public class PdfService {
             agregarImagenes(document, formulario, imagenesBytes);
         }
 
-        agregarFirmas(document, formulario, firmaClienteBytes);
+        agregarFirmas(document, pdfDoc, formulario, firmaClienteBytes);
 
         document.close();
 
