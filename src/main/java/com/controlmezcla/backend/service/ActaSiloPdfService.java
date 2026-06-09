@@ -404,7 +404,7 @@ public class ActaSiloPdfService {
             return;
         }
 
-        agregarTituloSeccion(documento, "CALIFICA NUESTRO SERVICIO", null);
+        agregarTituloSeccion(documento, "6. CALIFICA NUESTRO SERVICIO", null);
 
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
