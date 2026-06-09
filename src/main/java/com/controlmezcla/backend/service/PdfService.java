@@ -510,7 +510,7 @@ public class PdfService {
             return;
         }
 
-        agregarTituloSeccion(document, "CALIFICA NUESTRO SERVICIO", null);
+        agregarTituloSeccion(document, "6. CALIFICA NUESTRO SERVICIO", null);
 
         Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
         tabla.setWidth(UnitValue.createPercentValue(100));
