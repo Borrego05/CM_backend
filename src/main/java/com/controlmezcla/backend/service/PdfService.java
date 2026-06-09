@@ -500,7 +500,40 @@ public class PdfService {
 
         document.add(tabla);
 
+        agregarCalificacion(document, formulario);
         agregarPie(document);
+    }
+
+    private void agregarCalificacion(Document document, Formulario formulario) {
+        if (formulario.getCalificacion() == null && (formulario.getComentario_calificacion() == null || formulario.getComentario_calificacion().isEmpty())) {
+            return;
+        }
+
+        agregarTituloSeccion(document, "CALIFICA NUESTRO SERVICIO", "static/estrella.png");
+
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        tabla.setWidth(UnitValue.createPercentValue(100));
+        SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
+
+        // Celda de estrellas
+        Cell celdaEstrellas = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaEstrellas.add(new Paragraph("CALIFICACIÓN").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(6));
+        StringBuilder estrellas = new StringBuilder();
+        int cal = formulario.getCalificacion() != null ? formulario.getCalificacion() : 0;
+        for (int i = 1; i <= 5; i++) {
+            estrellas.append(i <= cal ? "★" : "☆");
+        }
+        celdaEstrellas.add(new Paragraph(estrellas.toString()).setFontSize(22).setFontColor(AMARILLO));
+        tabla.addCell(celdaEstrellas);
+
+        // Celda de comentario
+        Cell celdaComentario = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaComentario.add(new Paragraph("COMENTARIOS").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(6));
+        String comentario = formulario.getComentario_calificacion() != null ? formulario.getComentario_calificacion() : "";
+        celdaComentario.add(new Paragraph(comentario).setFontSize(10));
+        tabla.addCell(celdaComentario);
+
+        document.add(tabla);
     }
 
     private void agregarPie(Document document) {

@@ -71,6 +71,8 @@ public class FormularioService {
         formulario.setTelefono_tecnico(request.getTelefono_tecnico());
         formulario.setNombre_recibe(request.getNombre_recibe());
         formulario.setCedula_recibe(request.getCedula_recibe());
+        formulario.setCalificacion(request.getCalificacion());
+        formulario.setComentario_calificacion(request.getComentario_calificacion());
         formulario.setTecnico(tecnico);
 
         formulario = formulario_repository.save(formulario);

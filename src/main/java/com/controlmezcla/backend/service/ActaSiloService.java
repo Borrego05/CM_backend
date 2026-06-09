@@ -67,6 +67,8 @@ public class ActaSiloService {
         acta.setTelefono_tecnico(request.getTelefono_tecnico());
         acta.setNombre_recibe(request.getNombre_recibe());
         acta.setCedula_recibe(request.getCedula_recibe());
+        acta.setCalificacion(request.getCalificacion());
+        acta.setComentario_calificacion(request.getComentario_calificacion());
         acta.setFecha(LocalDate.now());
 
         acta = acta_repository.save(acta);

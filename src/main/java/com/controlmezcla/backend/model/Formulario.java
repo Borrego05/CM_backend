@@ -35,6 +35,8 @@ public class Formulario {
     private String telefono_tecnico;
     private String nombre_recibe;
     private String cedula_recibe;
+    private Integer calificacion;
+    private String comentario_calificacion;
 
     @ManyToOne
     @JoinColumn(name = "fk_tecnico_id")

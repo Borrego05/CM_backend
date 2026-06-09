@@ -394,8 +394,40 @@ public class ActaSiloPdfService {
 
         documento.add(tabla_firmas);
 
-        // Pie de página igual al Informe de Servicios
+        agregarCalificacion(documento, actaSilo);
         agregarPie(documento);
+    }
+
+    private void agregarCalificacion(Document documento, ActaSilo acta) {
+        if (acta.getCalificacion() == null && (acta.getComentario_calificacion() == null || acta.getComentario_calificacion().isEmpty())) {
+            return;
+        }
+
+        agregarTituloSeccion(documento, "CALIFICA NUESTRO SERVICIO", "static/estrella.png");
+
+        Table tabla = new Table(UnitValue.createPercentArray(new float[]{50, 50}));
+        tabla.setWidth(UnitValue.createPercentValue(100));
+        SolidBorder borde = new SolidBorder(GRIS_BORDE, 0.8f);
+
+        // Celda de estrellas
+        Cell celdaEstrellas = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaEstrellas.add(new Paragraph("CALIFICACIÓN").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(6));
+        StringBuilder estrellas = new StringBuilder();
+        int cal = acta.getCalificacion() != null ? acta.getCalificacion() : 0;
+        for (int i = 1; i <= 5; i++) {
+            estrellas.append(i <= cal ? "★" : "☆");
+        }
+        celdaEstrellas.add(new Paragraph(estrellas.toString()).setFontSize(22).setFontColor(AMARILLO));
+        tabla.addCell(celdaEstrellas);
+
+        // Celda de comentario
+        Cell celdaComentario = new Cell().setBorder(borde).setPadding(10).setVerticalAlignment(VerticalAlignment.MIDDLE);
+        celdaComentario.add(new Paragraph("COMENTARIOS").setFontSize(7).setFontColor(GRIS_LABEL).setMarginBottom(6));
+        String comentario = acta.getComentario_calificacion() != null ? acta.getComentario_calificacion() : "";
+        celdaComentario.add(new Paragraph(comentario).setFontSize(10));
+        tabla.addCell(celdaComentario);
+
+        documento.add(tabla);
     }
 
     // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────────
