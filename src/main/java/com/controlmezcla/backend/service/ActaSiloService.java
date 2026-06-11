@@ -35,6 +35,9 @@ public class ActaSiloService {
     @Autowired
     private ActaSiloPdfService pdf_service;
 
+    @Autowired
+    private R2StorageService r2StorageService;
+
     // ── ALMACENAMIENTO EN DISCO (desactivado temporalmente para Railway) ──────
     // Para reactivar: descomentar las líneas marcadas con [STORAGE] en este archivo,
     // en ActaSiloPdfService.java y en application.properties (app.storage.base / app.storage.pdf)
@@ -44,7 +47,8 @@ public class ActaSiloService {
     // private String pdf_path;                                                 // [STORAGE]
 
     @Transactional
-    public byte[] crearActaSilo(ActaSiloRequest request, List<MultipartFile> imagenes, MultipartFile firmaCliente)
+    public byte[] crearActaSilo(ActaSiloRequest request, List<MultipartFile> imagenes,
+                                List<MultipartFile> videos, MultipartFile firmaCliente)
     {
         Usuario tecnico = usuario_repository.findById(request.getTecnico_id())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -115,8 +119,7 @@ public class ActaSiloService {
         // }                                                                     // [STORAGE]
         // ── FIN BLOQUE ALMACENAMIENTO ─────────────────────────────────────────
 
-        // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────
-        // Convierte los MultipartFile a byte[] para pasarlos al PDF sin tocar disco.
+        // ── GENERACIÓN EN MEMORIA + ALMACENAMIENTO R2 ────────────────────────
         try {
             List<byte[]> imagenes_bytes = new ArrayList<>();
             if (imagenes != null) {
@@ -124,13 +127,33 @@ public class ActaSiloService {
                     imagenes_bytes.add(img.getBytes());
                 }
             }
+
+            List<byte[]> videos_bytes = new ArrayList<>();
+            if (videos != null) {
+                for (MultipartFile vid : videos) {
+                    videos_bytes.add(vid.getBytes());
+                }
+            }
+
             byte[] firma_bytes = (firmaCliente != null && !firmaCliente.isEmpty())
                     ? firmaCliente.getBytes()
                     : null;
-            return pdf_service.GenerarPdf(acta, imagenes_bytes, firma_bytes);
+
+            byte[] pdf_generado = pdf_service.GenerarPdf(acta, imagenes_bytes, firma_bytes);
+
+            // Guardar en R2: imágenes + videos + PDF del acta
+            r2StorageService.guardar_acta(
+                    acta.getCliente(),
+                    acta.getCodigo_acta(),
+                    imagenes_bytes,
+                    videos_bytes,
+                    pdf_generado
+            );
+
+            return pdf_generado;
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Error generando PDF: " + e.getMessage(), e);
+            throw new RuntimeException("Error generando acta: " + e.getMessage(), e);
         }
         // ── FIN GENERACIÓN EN MEMORIA ─────────────────────────────────────────
     }

@@ -51,35 +51,64 @@ public class R2StorageService {
         );
     }
 
-    public void guardar_informe(String cliente, String codigo_informe, List<byte[]> imagenes, byte[] pdf_bytes)
+    // ── Informe de Servicios ──────────────────────────────────────────────────
+    public void guardar_informe(String cliente, String codigo_informe,
+                                List<byte[]> imagenes, List<byte[]> videos,
+                                byte[] pdf_bytes)
     {
-        String cliente_normalizado = cliente.trim().toLowerCase()
-                .replaceAll("[^a-z0-9_\\-]", "_");
-        String ruta_cliente = cliente_normalizado + "/";
-        String ruta_informe = cliente_normalizado + "/" + codigo_informe + "/";
+        String ruta_informe = normalizar(cliente) + "/" + codigo_informe + "/";
+        guardar_documentacion(ruta_informe, imagenes, videos, pdf_bytes, "informe.pdf");
+    }
 
-        if(!enabled)
+    // ── Acta Mantenimiento de Silo ────────────────────────────────────────────
+    public void guardar_acta(String cliente, String codigo_acta,
+                             List<byte[]> imagenes, List<byte[]> videos,
+                             byte[] pdf_bytes)
+    {
+        String ruta_acta = "actas/" + normalizar(cliente) + "/" + codigo_acta + "/";
+        guardar_documentacion(ruta_acta, imagenes, videos, pdf_bytes, "acta.pdf");
+    }
+
+    // ── Lógica común: imágenes + videos + PDF en una ruta base ────────────────
+    private void guardar_documentacion(String ruta_base,
+                                       List<byte[]> imagenes, List<byte[]> videos,
+                                       byte[] pdf_bytes, String nombre_pdf)
+    {
+        if (!enabled)
         {
-            System.out.println("R2 deshabilitado en ambiente de pruebas local - Se salta la subida de archivos");
+            System.out.println("R2 deshabilitado en local — se omite la subida a: " + ruta_base);
             return;
         }
 
-        if(existe_directorio(ruta_informe))
+        if (existe_directorio(ruta_base))
         {
             throw new IllegalStateException(
-                    "Ya existe un informe con el codigo " +
-                            codigo_informe + "para el cliente " + cliente +
-                            ". " + "No se puede reescribir un informe existente."
-            );
+                    "Ya existe un documento en la ruta " + ruta_base +
+                    ". No se puede sobreescribir un registro existente.");
         }
 
-        for(int i = 0; i < imagenes.size(); i++)
-        {
-            String ruta_imagen = ruta_informe + "imagen_" + (i + 1) + ".jpg";
-            subir_archivo(ruta_imagen, imagenes.get(i), "image/jpeg");
+        // Imágenes
+        if (imagenes != null) {
+            for (int i = 0; i < imagenes.size(); i++) {
+                subir_archivo(ruta_base + "imagen_" + (i + 1) + ".jpg",
+                        imagenes.get(i), "image/jpeg");
+            }
         }
 
-        String ruta_pdf = ruta_informe + "informe.pdf";
-        subir_archivo(ruta_pdf, pdf_bytes, "application/pdf");
+        // Videos
+        if (videos != null) {
+            for (int i = 0; i < videos.size(); i++) {
+                subir_archivo(ruta_base + "video_" + (i + 1) + ".mp4",
+                        videos.get(i), "video/mp4");
+            }
+        }
+
+        // PDF
+        subir_archivo(ruta_base + nombre_pdf, pdf_bytes, "application/pdf");
+    }
+
+    private String normalizar(String nombre)
+    {
+        return nombre.trim().toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
     }
 }

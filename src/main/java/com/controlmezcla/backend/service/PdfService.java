@@ -608,7 +608,8 @@ public class PdfService {
     }
 
     // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────────
-    public byte[] generarPDF(Formulario formulario, List<byte[]> imagenesBytes, byte[] firmaClienteBytes) throws IOException {
+    public byte[] generarPDF(Formulario formulario, List<byte[]> imagenesBytes,
+                             List<byte[]> videosBytes, byte[] firmaClienteBytes) throws IOException {
         // ── MODO DISCO (desactivado para Railway) ──────────────────────────────
         // String nombreArchivo = "informe_" + formulario.getId() + ".pdf";
         // String rutaCompleta = pdfPath + nombreArchivo;
@@ -654,6 +655,7 @@ public class PdfService {
                 formulario.getCliente(),
                 formulario.getCodigo_informe(),
                 imagenesBytes,
+                videosBytes,
                 pdf_generado
         );
         return pdf_generado;

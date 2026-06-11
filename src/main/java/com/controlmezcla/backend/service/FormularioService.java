@@ -49,6 +49,7 @@ public class FormularioService {
     public byte[] crearFormulario(
             FormularioRequest request,
             List<MultipartFile> imagenes,
+            List<MultipartFile> videos,
             MultipartFile firmaCliente
     )
     {
@@ -122,7 +123,6 @@ public class FormularioService {
         // ── FIN BLOQUE ALMACENAMIENTO ─────────────────────────────────────────
 
         // ── GENERACIÓN EN MEMORIA (activo para Railway) ───────────────────────
-        // Convierte los MultipartFile a byte[] para pasarlos al PDF sin tocar disco.
         try {
             List<byte[]> imagenes_bytes = new ArrayList<>();
             if (imagenes != null) {
@@ -130,10 +130,18 @@ public class FormularioService {
                     imagenes_bytes.add(img.getBytes());
                 }
             }
+
+            List<byte[]> videos_bytes = new ArrayList<>();
+            if (videos != null) {
+                for (MultipartFile vid : videos) {
+                    videos_bytes.add(vid.getBytes());
+                }
+            }
+
             byte[] firma_bytes = (firmaCliente != null && !firmaCliente.isEmpty())
                     ? firmaCliente.getBytes()
                     : null;
-            return pdf_service.generarPDF(formulario, imagenes_bytes, firma_bytes);
+            return pdf_service.generarPDF(formulario, imagenes_bytes, videos_bytes, firma_bytes);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error generando PDF: " + e.getMessage(), e);
