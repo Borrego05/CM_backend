@@ -23,6 +23,7 @@ public class ActaSiloController {
     public ResponseEntity<byte[]> crearActaSilo(
             @RequestPart("data") String data,
             @RequestPart(value = "imagenes", required = false) List<MultipartFile> imagenes,
+            @RequestPart(value = "videos",   required = false) List<MultipartFile> videos,
             @RequestPart("firmaCliente") MultipartFile firmaCliente)
     {
         try
@@ -30,7 +31,7 @@ public class ActaSiloController {
             ObjectMapper mapper = new ObjectMapper();
             ActaSiloRequest request = mapper.readValue(data, ActaSiloRequest.class);
 
-            byte[] pdf = acta_service.crearActaSilo(request, imagenes, firmaCliente);
+            byte[] pdf = acta_service.crearActaSilo(request, imagenes, videos, firmaCliente);
 
             System.out.println("==== ACTA SILO CONTROLLER ======");
             System.out.println("CLIENTE: " + request.getCliente());
