@@ -282,6 +282,38 @@ public class ActaSiloPdfService {
                 .setBorder(new SolidBorder(GRIS_BORDE, 0.8f))
                 .setPadding(10));
         documento.add(tabla_descripcion);
+
+        // ── MATERIALES UTILIZADOS ─────────────────────────────────────────────
+        if (acta.getMateriales_utilizados() != null && !acta.getMateriales_utilizados().isEmpty()) {
+            agregarTituloSeccion(documento, "MATERIALES UTILIZADOS", "static/doc.png");
+
+            Table tabla_materiales = new Table(UnitValue.createPercentArray(new float[]{20, 80}));
+            tabla_materiales.setWidth(UnitValue.createPercentValue(100));
+            SolidBorder bordes = new SolidBorder(GRIS_BORDE, 0.8f);
+
+            tabla_materiales.addCell(new Cell()
+                    .add(new Paragraph("CANTIDAD").setBold().setFontSize(10)
+                            .setFontColor(BLANCO).setTextAlignment(TextAlignment.CENTER))
+                    .setBorder(bordes).setPadding(8).setBackgroundColor(GRIS_OSCURO)
+                    .setTextAlignment(TextAlignment.CENTER));
+
+            tabla_materiales.addCell(new Cell()
+                    .add(new Paragraph("DESCRIPCIÓN").setBold().setFontSize(10)
+                            .setFontColor(BLANCO).setTextAlignment(TextAlignment.CENTER))
+                    .setBorder(bordes).setPadding(8).setBackgroundColor(GRIS_OSCURO)
+                    .setTextAlignment(TextAlignment.CENTER));
+
+            for (String material : acta.getMateriales_utilizados().split(",")) {
+                tabla_materiales.addCell(new Cell()
+                        .add(new Paragraph("1").setFontSize(10).setTextAlignment(TextAlignment.CENTER))
+                        .setBorder(bordes).setPadding(8).setTextAlignment(TextAlignment.CENTER));
+
+                tabla_materiales.addCell(new Cell()
+                        .add(new Paragraph(material.trim()).setFontSize(10))
+                        .setBorder(bordes).setPadding(8));
+            }
+            documento.add(tabla_materiales);
+        }
     }
 
     private void AgregarImagenes(Document documento, List<byte[]> imagenesBytes) {

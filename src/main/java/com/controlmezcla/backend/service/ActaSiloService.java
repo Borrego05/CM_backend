@@ -64,6 +64,7 @@ public class ActaSiloService {
         acta.setNumero_silo(request.getNumero_silo());
         acta.setNumero_toneladas(request.getNumero_toneladas());
         acta.setDescripcion(request.getDescripcion());
+        acta.setMateriales_utilizados(request.getMateriales_utilizados());
         acta.setNombre_tecnico(request.getNombre_tecnico());
         acta.setCedula_tecnico(request.getCedula_tecnico());
         acta.setTipo_mantenimiento(request.getTipo_mantenimiento());

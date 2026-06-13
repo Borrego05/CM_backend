@@ -14,6 +14,7 @@ public class ActaSiloRequest {
     private String numero_silo;
     private String numero_toneladas;
     private String descripcion;
+    private String materiales_utilizados;
     private String nombre_tecnico;
     private String cedula_tecnico;
     private String tipo_mantenimiento;
