@@ -26,6 +26,7 @@ public class ActaSilo {
     private String numero_toneladas;
     @Column(columnDefinition = "TEXT")
     private String descripcion;
+    private String materiales_utilizados;
     private String nombre_tecnico;
     private String cedula_tecnico;
     private String telefono_tecnico;
