@@ -1,8 +1,8 @@
 package com.controlmezcla.backend.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
@@ -52,21 +52,31 @@ public class R2StorageService {
     }
 
     // ── Informe de Servicios ──────────────────────────────────────────────────
+    @Async
     public void guardar_informe(String cliente, String codigo_informe,
                                 List<byte[]> imagenes, List<byte[]> videos,
                                 byte[] pdf_bytes)
     {
-        String ruta_informe = normalizar(cliente) + "/" + codigo_informe + "/";
-        guardar_documentacion(ruta_informe, imagenes, videos, pdf_bytes, "informe.pdf");
+        try {
+            String ruta_informe = normalizar(cliente) + "/" + codigo_informe + "/";
+            guardar_documentacion(ruta_informe, imagenes, videos, pdf_bytes, "informe.pdf");
+        } catch (Exception e) {
+            System.err.println("Error subiendo informe a R2 [" + codigo_informe + "]: " + e.getMessage());
+        }
     }
 
     // ── Acta Mantenimiento de Silo ────────────────────────────────────────────
+    @Async
     public void guardar_acta(String cliente, String codigo_acta,
                              List<byte[]> imagenes, List<byte[]> videos,
                              byte[] pdf_bytes)
     {
-        String ruta_acta = "actas/" + normalizar(cliente) + "/" + codigo_acta + "/";
-        guardar_documentacion(ruta_acta, imagenes, videos, pdf_bytes, "acta.pdf");
+        try {
+            String ruta_acta = "actas/" + normalizar(cliente) + "/" + codigo_acta + "/";
+            guardar_documentacion(ruta_acta, imagenes, videos, pdf_bytes, "acta.pdf");
+        } catch (Exception e) {
+            System.err.println("Error subiendo acta a R2 [" + codigo_acta + "]: " + e.getMessage());
+        }
     }
 
     // ── Lógica común: imágenes + videos + PDF en una ruta base ────────────────
