@@ -142,7 +142,7 @@ public class ActaSiloService {
 
             byte[] pdf_generado = pdf_service.GenerarPdf(acta, imagenes_bytes, firma_bytes);
 
-            // Guardar en R2: imágenes + videos + PDF del acta
+            // Subida a R2 en background (@Async) — no bloquea la respuesta al cliente
             r2StorageService.guardar_acta(
                     acta.getCliente(),
                     acta.getCodigo_acta(),
